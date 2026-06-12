@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+/* 手動控制亮暗（設定頁切換），不再跟隨 media query */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ===== 雙色主題 tokens =====
+   Primary = 人的操作（導覽、選取、連結、使用者訊息）
+   Secondary = AI 的聲音（assistant、agent、來源）
+   漸層 = 兩者交會（品牌、AI 送出鈕、歡迎頁標題） */
+
+:root {
+  --primary: var(--color-indigo-600);
+  --primary-hover: var(--color-indigo-500);
+  --primary-soft: var(--color-indigo-50);
+  --primary-fg: var(--color-white);
+  --secondary: var(--color-cyan-600);
+  --secondary-hover: var(--color-cyan-500);
+  --secondary-soft: var(--color-cyan-50);
+  --secondary-fg: var(--color-white);
+}
+.dark {
+  --primary: var(--color-indigo-400);
+  --primary-hover: var(--color-indigo-300);
+  --primary-soft: color-mix(in oklab, var(--color-indigo-950) 60%, transparent);
+  --primary-fg: var(--color-zinc-950);
+  --secondary: var(--color-cyan-400);
+  --secondary-hover: var(--color-cyan-300);
+  --secondary-soft: color-mix(in oklab, var(--color-cyan-950) 60%, transparent);
+  --secondary-fg: var(--color-zinc-950);
+}
+
+:root[data-theme='violet-rose'] {
+  --primary: var(--color-violet-600);
+  --primary-hover: var(--color-violet-500);
+  --primary-soft: var(--color-violet-50);
+  --secondary: var(--color-rose-600);
+  --secondary-hover: var(--color-rose-500);
+  --secondary-soft: var(--color-rose-50);
+}
+.dark[data-theme='violet-rose'] {
+  --primary: var(--color-violet-400);
+  --primary-hover: var(--color-violet-300);
+  --primary-soft: color-mix(in oklab, var(--color-violet-950) 60%, transparent);
+  --secondary: var(--color-rose-400);
+  --secondary-hover: var(--color-rose-300);
+  --secondary-soft: color-mix(in oklab, var(--color-rose-950) 60%, transparent);
+}
+
+:root[data-theme='emerald-amber'] {
+  --primary: var(--color-emerald-600);
+  --primary-hover: var(--color-emerald-500);
+  --primary-soft: var(--color-emerald-50);
+  --secondary: var(--color-amber-600);
+  --secondary-hover: var(--color-amber-500);
+  --secondary-soft: var(--color-amber-50);
+}
+.dark[data-theme='emerald-amber'] {
+  --primary: var(--color-emerald-400);
+  --primary-hover: var(--color-emerald-300);
+  --primary-soft: color-mix(in oklab, var(--color-emerald-950) 60%, transparent);
+  --secondary: var(--color-amber-400);
+  --secondary-hover: var(--color-amber-300);
+  --secondary-soft: color-mix(in oklab, var(--color-amber-950) 60%, transparent);
+}
+
+:root[data-theme='blue-orange'] {
+  --primary: var(--color-blue-600);
+  --primary-hover: var(--color-blue-500);
+  --primary-soft: var(--color-blue-50);
+  --secondary: var(--color-orange-600);
+  --secondary-hover: var(--color-orange-500);
+  --secondary-soft: var(--color-orange-50);
+}
+.dark[data-theme='blue-orange'] {
+  --primary: var(--color-blue-400);
+  --primary-hover: var(--color-blue-300);
+  --primary-soft: color-mix(in oklab, var(--color-blue-950) 60%, transparent);
+  --secondary: var(--color-orange-400);
+  --secondary-hover: var(--color-orange-300);
+  --secondary-soft: color-mix(in oklab, var(--color-orange-950) 60%, transparent);
+}
+
+/* 讓 tokens 變成 utility（bg-primary、text-secondary、ring-primary-soft…） */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-fg: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-fg: var(--secondary-fg);
+}
+
+@theme {
+  /* 進場掃入一次，接著無限緩慢漂移（drift 只接管 transform，opacity 維持進場後的 1） */
+  --animate-spotlight:
+    spotlight 2s ease 0.75s 1 forwards, spotlight-drift 14s ease-in-out 2.75s infinite alternate;
+
+  @keyframes spotlight {
+    0% {
+      opacity: 0;
+      transform: translate(-72%, -62%) scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -40%) scale(1);
+    }
+  }
+
+  @keyframes spotlight-drift {
+    from {
+      transform: translate(-50%, -40%) scale(1);
+    }
+    to {
+      transform: translate(-44%, -46%) scale(1.08);
+    }
+  }
+}
+
+/* 桌面 app 的細 scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, currentColor 30%, transparent);
+}
