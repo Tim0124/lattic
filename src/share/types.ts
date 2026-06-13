@@ -67,15 +67,17 @@ export interface AgentStepEvent {
   step: AgentStep
 }
 
+export type AgentWriteMode = 'create' | 'overwrite' | 'append'
+
 export interface AgentWriteRequest {
   /** agent run id */
   id: string
   /** 這次寫入請求的 id，回覆確認時用 */
   requestId: string
   path: string
+  /** create/overwrite 為完整內容；append 為要追加的片段 */
   content: string
-  /** true = 覆寫既有筆記 */
-  exists: boolean
+  mode: AgentWriteMode
 }
 
 export interface NoteDoc {

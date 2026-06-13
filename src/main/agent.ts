@@ -3,7 +3,7 @@ import type { WebContents } from 'electron'
 import { vault } from './vault'
 import { indexer } from './indexer'
 import { chatOnce, type OllamaChatMessage } from './ollama'
-import type { AgentStep, AgentWriteRequest } from '../share/types'
+import type { AgentStep, AgentWriteMode, AgentWriteRequest } from '../share/types'
 
 const SYSTEM_PROMPT = `你是個人 wiki 的 agent，使用工具完成使用者交辦的任務。
 
@@ -11,13 +11,15 @@ const SYSTEM_PROMPT = `你是個人 wiki 的 agent，使用工具完成使用者
 - search_notes：語意搜尋筆記。args: {"query": "搜尋內容"}
 - list_notes：列出所有筆記路徑。args: {}
 - read_note：讀取一篇筆記的完整內容。args: {"path": "筆記路徑"}（使用 search/list 回傳的路徑）
-- write_note：建立或覆寫一篇筆記，會經過使用者確認。args: {"path": "筆記路徑", "content": "完整 markdown 內容"}
+- append_note：在既有筆記末端追加內容（不會動到原有內容，較安全），會經過使用者確認。args: {"path": "筆記路徑", "content": "要追加的 markdown"}
+- write_note：建立新筆記或覆寫整篇，會經過使用者確認。args: {"path": "筆記路徑", "content": "完整 markdown 內容"}
 
 規則：
 - 每次回覆只輸出一個 JSON 物件，不要有任何其他文字
 - 呼叫工具：{"tool": "工具名", "args": {...}}
 - 任務完成：{"final": "給使用者的繁體中文總結"}
-- 修改既有筆記前，先用 read_note 看過原內容，write_note 的 content 必須是修改後的完整內容
+- 只是要在既有筆記補充內容時，優先用 append_note；只有要整篇重寫時才用 write_note
+- 用 write_note 覆寫既有筆記前，先用 read_note 看過原內容，content 必須是修改後的完整內容
 - 找不到需要的資訊就在 final 裡誠實說明，不要捏造`
 
 const MAX_STEPS = 10
@@ -108,14 +110,14 @@ function extractJson(text: string): Record<string, unknown> | null {
     return { final: unescapeJsonString(finalSalvage[1].replace(/"\s*\}\s*$/, '')) }
   }
   const writeSalvage =
-    /"tool"\s*:\s*"write_note"[\s\S]*?"path"\s*:\s*"([^"]+)"[\s\S]*?"content"\s*:\s*"([\s\S]*)$/.exec(
+    /"tool"\s*:\s*"(write_note|append_note)"[\s\S]*?"path"\s*:\s*"([^"]+)"[\s\S]*?"content"\s*:\s*"([\s\S]*)$/.exec(
       text
     )
   if (writeSalvage) {
-    const content = writeSalvage[2].replace(/"\s*\}\s*\}\s*$/, '')
+    const content = writeSalvage[3].replace(/"\s*\}\s*\}\s*$/, '')
     return {
-      tool: 'write_note',
-      args: { path: writeSalvage[1], content: unescapeJsonString(content) }
+      tool: writeSalvage[1],
+      args: { path: writeSalvage[2], content: unescapeJsonString(content) }
     }
   }
   return null
@@ -223,10 +225,29 @@ class AgentService {
         const path = String(args.path ?? '')
         const content = String(args.content ?? '')
         if (!path || !content) return '錯誤：write_note 需要 path 與 content'
-        const approved = await this.requestWriteApproval(sender, id, path, content, signal)
+        const mode = vault.noteExists(path.endsWith('.md') ? path : `${path}.md`)
+          ? 'overwrite'
+          : 'create'
+        const approved = await this.requestWriteApproval(sender, id, path, content, mode, signal)
         if (!approved) return '使用者拒絕了這次寫入。請尊重這個決定，不要重試相同內容。'
         const written = await vault.writeNote(path, content)
         return `已寫入 ${written}`
+      }
+      case 'append_note': {
+        const path = String(args.path ?? '')
+        const content = String(args.content ?? '')
+        if (!path || !content) return '錯誤：append_note 需要 path 與 content'
+        const approved = await this.requestWriteApproval(
+          sender,
+          id,
+          path,
+          content,
+          'append',
+          signal
+        )
+        if (!approved) return '使用者拒絕了這次追加。請尊重這個決定，不要重試相同內容。'
+        const written = await vault.appendNote(path, content)
+        return `已追加至 ${written}`
       }
       default:
         return `錯誤：沒有 ${tool} 這個工具`
@@ -238,6 +259,7 @@ class AgentService {
     id: string,
     path: string,
     content: string,
+    mode: AgentWriteMode,
     signal: AbortSignal
   ): Promise<boolean> {
     return new Promise((resolve) => {
@@ -247,13 +269,7 @@ class AgentService {
         this.pendingWrites.delete(requestId)
         resolve(false)
       })
-      const payload: AgentWriteRequest = {
-        id,
-        requestId,
-        path,
-        content,
-        exists: vault.noteExists(path.endsWith('.md') ? path : `${path}.md`)
-      }
+      const payload: AgentWriteRequest = { id, requestId, path, content, mode }
       if (sender.isDestroyed()) {
         resolve(false)
         return

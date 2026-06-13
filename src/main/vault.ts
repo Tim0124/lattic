@@ -111,6 +111,23 @@ class VaultService {
     return abs.slice(this.root.length + 1)
   }
 
+  /** 在既有筆記末端追加內容（筆記不存在則建立）。寫入後 watcher 會觸發 rescan 與 reindex */
+  async appendNote(relPath: string, content: string): Promise<string> {
+    const withExt = relPath.endsWith('.md') ? relPath : `${relPath}.md`
+    const abs = this.toAbsolute(withExt)
+    if (!abs) throw new Error(`路徑不在 vault 內：${relPath}`)
+    let existing = ''
+    try {
+      existing = await readFile(abs, 'utf-8')
+    } catch {
+      // 不存在則新建
+    }
+    const merged = existing.trim() ? `${existing.trimEnd()}\n\n${content}\n` : `${content}\n`
+    await mkdir(dirname(abs), { recursive: true })
+    await writeFile(abs, merged, 'utf-8')
+    return abs.slice(this.root.length + 1)
+  }
+
   /**
    * 解析 vault 內檔案的相對路徑為絕對路徑，防止 path traversal。
    * 支援完整相對路徑，或 Obsidian 式的純檔名（取 filesByName 對照）。

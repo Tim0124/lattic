@@ -1,8 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle, Bot, FilePen, FilePlus2, Play, Square, Wrench } from 'lucide-react'
+import {
+  AlertTriangle,
+  Bot,
+  FilePen,
+  FilePlus2,
+  FileDown,
+  Play,
+  Square,
+  Wrench
+} from 'lucide-react'
 import type { AgentStep, AgentWriteRequest } from 'src/share/types'
+
+const WRITE_MODE = {
+  create: { Icon: FilePlus2, label: 'Agent 想建立新筆記', confirm: '同意建立' },
+  overwrite: { Icon: FilePen, label: 'Agent 想覆寫筆記', confirm: '同意覆寫' },
+  append: { Icon: FileDown, label: 'Agent 想追加內容到筆記', confirm: '同意追加' }
+} as const
 
 interface AgentPanelProps {
   onOpenNote: (path: string) => void
@@ -10,6 +25,7 @@ interface AgentPanelProps {
 
 export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
   const [task, setTask] = useState('')
+  const [submittedTask, setSubmittedTask] = useState<string | null>(null)
   const [steps, setSteps] = useState<AgentStep[]>([])
   const [runId, setRunId] = useState<string | null>(null)
   const [writeReq, setWriteReq] = useState<AgentWriteRequest | null>(null)
@@ -43,6 +59,8 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
     const t = task.trim()
     if (!t || runId) return
     const id = crypto.randomUUID()
+    setSubmittedTask(t)
+    setTask('')
     setSteps([])
     setWriteReq(null)
     setRunId(id)
@@ -58,7 +76,7 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
   return (
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-3">
-        {steps.length === 0 && !runId && (
+        {!submittedTask && (
           <div className="flex flex-col items-center gap-2 pt-12 text-center">
             <div className="bg-secondary-soft flex h-10 w-10 items-center justify-center rounded-full">
               <Bot className="text-secondary h-5 w-5" />
@@ -69,6 +87,13 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
               「整理所有提到 RAG 的筆記，寫一篇總覽」
             </p>
             <p className="text-xs text-zinc-300 dark:text-zinc-600">寫入筆記前會先徵求你的同意</p>
+          </div>
+        )}
+        {submittedTask && (
+          <div className="flex justify-end">
+            <div className="bg-primary text-primary-fg max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm shadow-sm">
+              {submittedTask}
+            </div>
           </div>
         )}
         {steps.map((s, i) => {
@@ -119,22 +144,23 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
         {writeReq && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-sm dark:border-amber-700 dark:bg-amber-950/60">
             <div className="flex items-center gap-1.5 text-sm font-medium text-amber-800 dark:text-amber-200">
-              {writeReq.exists ? (
-                <>
-                  <FilePen className="h-4 w-4" /> Agent 想覆寫筆記
-                </>
-              ) : (
-                <>
-                  <FilePlus2 className="h-4 w-4" /> Agent 想建立新筆記
-                </>
-              )}
+              {(() => {
+                const Icon = WRITE_MODE[writeReq.mode].Icon
+                return <Icon className="h-4 w-4" />
+              })()}
+              {WRITE_MODE[writeReq.mode].label}
             </div>
             <button
-              onClick={() => writeReq.exists && onOpenNote(writeReq.path)}
+              onClick={() => onOpenNote(writeReq.path)}
               className="text-primary mt-1 font-mono text-xs hover:underline"
             >
               {writeReq.path}
             </button>
+            {writeReq.mode === 'append' && (
+              <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+                以下內容會接到筆記末端：
+              </div>
+            )}
             <pre className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-amber-200 bg-white p-2 text-xs whitespace-pre-wrap dark:border-amber-900 dark:bg-zinc-900">
               {writeReq.content}
             </pre>
@@ -149,7 +175,7 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
                 onClick={() => answerWrite(true)}
                 className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-amber-500"
               >
-                同意寫入
+                {WRITE_MODE[writeReq.mode].confirm}
               </button>
             </div>
           </div>
