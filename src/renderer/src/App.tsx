@@ -24,6 +24,7 @@ import { Spotlight } from './components/ui/spotlight'
 import { TextGenerateEffect } from './components/ui/text-generate-effect'
 import { SettingsDialog } from './components/SettingsDialog'
 import { OnboardingDialog } from './components/OnboardingDialog'
+import { VaultSetup } from './components/VaultSetup'
 import { useTheme } from './lib/theme'
 import { createWikiResolver } from './lib/wikilink'
 import { MediaView } from './components/MediaView'
@@ -113,6 +114,8 @@ function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
+  // null = 載入中；'' = 尚未選擇 vault（顯示引導）；非空 = 已設定
+  const [vaultPath, setVaultPath] = useState<string | null>(null)
   const { t } = useI18n()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
@@ -172,6 +175,16 @@ function App(): React.JSX.Element {
     void window.api.getOllamaStatus().then(setOllamaStatus)
   }, [])
 
+  useEffect(() => {
+    void window.api.getVaultPath().then(setVaultPath)
+  }, [])
+
+  // 首次引導：選擇 vault 資料夾。setRoot 會觸發 vault:changed → useVaultInvalidation 重抓筆記
+  const pickVault = useCallback(async () => {
+    const picked = await window.api.pickVault()
+    if (picked) setVaultPath(picked)
+  }, [])
+
   const ollamaReady =
     !!ollamaStatus && ollamaStatus.running && ollamaStatus.chatReady && ollamaStatus.embedReady
 
@@ -200,6 +213,11 @@ function App(): React.JSX.Element {
   }, [])
 
   const resolveWikiTarget = useMemo(() => createWikiResolver(notes), [notes])
+
+  // 尚未選擇 vault：顯示全螢幕引導，取代主介面
+  if (vaultPath === '') {
+    return <VaultSetup onPick={pickVault} />
+  }
 
   return (
     <div className="relative h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">

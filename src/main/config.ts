@@ -14,6 +14,7 @@ export interface AppConfig {
 }
 
 const DEFAULTS: AppConfig = {
+  // 空字串代表「尚未設定」：首次啟動會引導使用者選擇 vault 資料夾
   vaultPath: '',
   chatModel: 'gemma4:e4b',
   embedModel: 'bge-m3',
