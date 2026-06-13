@@ -9,6 +9,24 @@ const SYSTEM_PROMPT = `你是使用者個人 wiki 的助理，根據檢索到的
 - 用繁體中文回答，技術術語保留英文`
 
 const TOP_K = 5
+/** 送進模型的對話歷史字元上限。num_ctx 8192 還要容納 system prompt、檢索片段與輸出 */
+const HISTORY_CHAR_BUDGET = 4000
+
+/**
+ * 從最新往回保留對話訊息，累積字元超過預算就停，避免長對話塞爆模型 context。
+ * 永遠保留最後一則（當前問題）；修剪後若開頭是 assistant 則去掉，維持 user 起頭。
+ */
+function pruneHistory(messages: ChatMessage[]): ChatMessage[] {
+  const kept: ChatMessage[] = []
+  let chars = 0
+  for (let i = messages.length - 1; i >= 0; i--) {
+    chars += messages[i].content.length
+    if (i < messages.length - 1 && chars > HISTORY_CHAR_BUDGET) break
+    kept.unshift(messages[i])
+  }
+  if (kept.length > 1 && kept[0].role === 'assistant') kept.shift()
+  return kept
+}
 
 class ChatService {
   private controllers = new Map<string, AbortController>()
@@ -21,12 +39,16 @@ class ChatService {
     try {
       const question = messages[messages.length - 1]?.content ?? ''
       const chunks = await indexer.retrieve(question, TOP_K)
-      sources = chunks.map((c) => ({
-        path: c.path,
-        title: c.title,
-        heading: c.heading,
-        score: c.score
-      }))
+      // 來源 chip 依筆記去重（chunks 已按分數排序，每篇保留分數最高的那段）
+      const seenPaths = new Set<string>()
+      sources = []
+      for (const c of chunks) {
+        if (seenPaths.has(c.path)) continue
+        seenPaths.add(c.path)
+        sources.push({ path: c.path, title: c.title, heading: c.heading, score: c.score })
+      }
+      const pruned = pruneHistory(messages)
+
       const context =
         chunks.length > 0
           ? chunks
@@ -48,7 +70,7 @@ class ChatService {
               role: 'system',
               content: `${SYSTEM_PROMPT}\n\n以下是檢索到的筆記片段：\n\n${context}`
             },
-            ...messages
+            ...pruned
           ]
         })
       })
