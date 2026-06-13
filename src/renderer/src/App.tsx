@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
+import type { ImperativePanelHandle } from 'react-resizable-panels'
+import {
+  Bot,
+  MessagesSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  RefreshCw,
+  Settings
+} from 'lucide-react'
 import logo from './assets/logo.svg'
 import type { SearchResult, IndexStatus, VaultFile, OllamaStatus } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
@@ -101,6 +111,10 @@ function App(): React.JSX.Element {
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const leftPanelRef = useRef<ImperativePanelHandle>(null)
+  const rightPanelRef = useRef<ImperativePanelHandle>(null)
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [rightCollapsed, setRightCollapsed] = useState(false)
   const { settings: themeSettings, update: updateTheme } = useTheme()
 
   const { data: files = [] } = useFiles()
@@ -184,10 +198,19 @@ function App(): React.JSX.Element {
   const resolveWikiTarget = useMemo(() => createWikiResolver(notes), [notes])
 
   return (
-    <div className="h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="relative h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <ResizablePanelGroup direction="horizontal" autoSaveId="my-wiki-layout">
         {/* 左欄：導覽 */}
-        <ResizablePanel defaultSize={20} minSize={14} maxSize={32}>
+        <ResizablePanel
+          ref={leftPanelRef}
+          collapsible
+          collapsedSize={0}
+          defaultSize={20}
+          minSize={14}
+          maxSize={32}
+          onCollapse={() => setLeftCollapsed(true)}
+          onExpand={() => setLeftCollapsed(false)}
+        >
           <div className="flex h-full flex-col bg-zinc-50 dark:bg-zinc-900/50">
             <div className="flex h-11 shrink-0 items-center gap-2 border-b border-zinc-200 px-3 dark:border-zinc-800">
               <img src={logo} alt="Lattic" className="h-6 w-6 rounded-md shadow-sm" />
@@ -201,6 +224,13 @@ function App(): React.JSX.Element {
                 className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               >
                 <Settings className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => leftPanelRef.current?.collapse()}
+                title="收合側欄"
+                className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
               </button>
             </div>
             <SearchBar
@@ -257,9 +287,25 @@ function App(): React.JSX.Element {
         <ResizableHandle withHandle />
 
         {/* 右欄：AI */}
-        <ResizablePanel defaultSize={28} minSize={18} maxSize={42}>
+        <ResizablePanel
+          ref={rightPanelRef}
+          collapsible
+          collapsedSize={0}
+          defaultSize={28}
+          minSize={18}
+          maxSize={42}
+          onCollapse={() => setRightCollapsed(true)}
+          onExpand={() => setRightCollapsed(false)}
+        >
           <div className="flex h-full flex-col bg-zinc-50 dark:bg-zinc-900/50">
             <div className="flex h-11 shrink-0 items-center gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
+              <button
+                onClick={() => rightPanelRef.current?.collapse()}
+                title="收合 AI 面板"
+                className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              >
+                <PanelRightClose className="h-3.5 w-3.5" />
+              </button>
               {(
                 [
                   { key: 'chat', label: '問答', Icon: MessagesSquare },
@@ -291,6 +337,26 @@ function App(): React.JSX.Element {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* 側欄收合後的浮動展開鈕 */}
+      {leftCollapsed && (
+        <button
+          onClick={() => leftPanelRef.current?.expand()}
+          title="展開側欄"
+          className="absolute top-2.5 left-2 z-20 rounded-md border border-zinc-200 bg-white/90 p-1.5 text-zinc-500 shadow-sm backdrop-blur hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:text-zinc-100"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      )}
+      {rightCollapsed && (
+        <button
+          onClick={() => rightPanelRef.current?.expand()}
+          title="展開 AI 面板"
+          className="absolute top-2.5 right-2 z-20 rounded-md border border-zinc-200 bg-white/90 p-1.5 text-zinc-500 shadow-sm backdrop-blur hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:text-zinc-100"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+        </button>
+      )}
 
       <SettingsDialog
         open={settingsOpen}
