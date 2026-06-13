@@ -31,8 +31,8 @@ const api = {
     ipcRenderer.invoke('search:query', query, k),
   getIndexStatus: (): Promise<IndexStatus> => ipcRenderer.invoke('index:status'),
   rebuildIndex: (): Promise<void> => ipcRenderer.invoke('index:rebuild'),
-  chatAsk: (id: string, messages: ChatMessage[]): Promise<void> =>
-    ipcRenderer.invoke('chat:ask', id, messages),
+  chatAsk: (id: string, messages: ChatMessage[], refPaths?: string[]): Promise<void> =>
+    ipcRenderer.invoke('chat:ask', id, messages, refPaths),
   chatStop: (id: string): Promise<void> => ipcRenderer.invoke('chat:stop', id),
   onVaultChanged: (cb: () => void): (() => void) => {
     const listener = (): void => cb()
@@ -44,7 +44,8 @@ const api = {
   onChatChunk: subscribe<ChatChunkEvent>('chat:chunk'),
   onChatDone: subscribe<ChatDoneEvent>('chat:done'),
   onChatError: subscribe<ChatErrorEvent>('chat:error'),
-  agentRun: (id: string, task: string): Promise<void> => ipcRenderer.invoke('agent:run', id, task),
+  agentRun: (id: string, task: string, refPaths?: string[]): Promise<void> =>
+    ipcRenderer.invoke('agent:run', id, task, refPaths),
   agentStop: (id: string): Promise<void> => ipcRenderer.invoke('agent:stop', id),
   agentResolveWrite: (requestId: string, approved: boolean): Promise<void> =>
     ipcRenderer.invoke('agent:resolve-write', requestId, approved),

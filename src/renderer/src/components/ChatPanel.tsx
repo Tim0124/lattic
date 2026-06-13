@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Eraser, FileText, SendHorizontal, Sparkles, Square } from 'lucide-react'
-import type { ChatMessage, ChatSource } from 'src/share/types'
+import { Eraser, FileText, Sparkles } from 'lucide-react'
+import type { ChatMessage, ChatSource, VaultFile } from 'src/share/types'
 import { cn } from '../lib/utils'
+import { ChatInput } from './ChatInput'
 
 interface UiMessage {
   role: 'user' | 'assistant'
@@ -14,14 +15,17 @@ interface UiMessage {
 
 interface ChatPanelProps {
   onOpenNote: (path: string) => void
+  files: VaultFile[]
 }
 
-export function ChatPanel({ onOpenNote }: ChatPanelProps): React.JSX.Element {
+export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Element {
   const [messages, setMessages] = useState<UiMessage[]>([])
   const [input, setInput] = useState('')
+  const [refs, setRefs] = useState<VaultFile[]>([])
   const [pendingId, setPendingId] = useState<string | null>(null)
   const pendingRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const notes = useMemo(() => files.filter((f) => f.kind === 'note'), [files])
 
   useEffect(() => {
     pendingRef.current = pendingId
@@ -76,9 +80,11 @@ export function ChatPanel({ onOpenNote }: ChatPanelProps): React.JSX.Element {
       { role: 'user', content: q },
       { role: 'assistant', content: '' }
     ])
+    const refPaths = refs.map((r) => r.path)
     setInput('')
+    setRefs([])
     setPendingId(id)
-    void window.api.chatAsk(id, history)
+    void window.api.chatAsk(id, history, refPaths)
   }
 
   return (
@@ -155,44 +161,21 @@ export function ChatPanel({ onOpenNote }: ChatPanelProps): React.JSX.Element {
       </div>
 
       <div className="border-t border-zinc-200 p-2.5 dark:border-zinc-800">
-        <div className="focus-within:border-primary focus-within:ring-primary-soft rounded-xl border border-zinc-200 bg-white shadow-sm focus-within:ring-2 dark:border-zinc-700 dark:bg-zinc-900">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault()
-                send()
-              }
-            }}
-            rows={2}
-            placeholder="輸入問題…"
-            className="w-full resize-none bg-transparent px-3 pt-2.5 text-sm outline-none placeholder:text-zinc-400"
-          />
-          <div className="flex items-center justify-between px-2 pb-2">
-            <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
-              Enter 送出 · Shift+Enter 換行
-            </span>
-            {pendingId ? (
-              <button
-                onClick={() => void window.api.chatStop(pendingId)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                title="停止"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button
-                onClick={send}
-                disabled={!input.trim()}
-                className="from-primary to-secondary text-primary-fg flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm hover:opacity-85 disabled:opacity-40"
-                title="送出"
-              >
-                <SendHorizontal className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+        <ChatInput
+          value={input}
+          onChange={setInput}
+          onSubmit={send}
+          onStop={() => pendingId && void window.api.chatStop(pendingId)}
+          pending={pendingId !== null}
+          placeholder="輸入問題…（打 / 引用筆記）"
+          hint="Enter 送出 · Shift+Enter 換行 · / 引用筆記"
+          files={notes}
+          refs={refs}
+          onAddRef={(f) =>
+            setRefs((prev) => (prev.some((r) => r.path === f.path) ? prev : [...prev, f]))
+          }
+          onRemoveRef={(path) => setRefs((prev) => prev.filter((r) => r.path !== path))}
+        />
       </div>
     </div>
   )

@@ -1,17 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import {
-  AlertTriangle,
-  Bot,
-  FilePen,
-  FilePlus2,
-  FileDown,
-  Play,
-  Square,
-  Wrench
-} from 'lucide-react'
-import type { AgentStep, AgentWriteRequest } from 'src/share/types'
+import { AlertTriangle, Bot, FilePen, FilePlus2, FileDown, Wrench } from 'lucide-react'
+import type { AgentStep, AgentWriteRequest, VaultFile } from 'src/share/types'
+import { ChatInput } from './ChatInput'
 
 const WRITE_MODE = {
   create: { Icon: FilePlus2, label: 'Agent 想建立新筆記', confirm: '同意建立' },
@@ -21,16 +13,19 @@ const WRITE_MODE = {
 
 interface AgentPanelProps {
   onOpenNote: (path: string) => void
+  files: VaultFile[]
 }
 
-export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
+export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.Element {
   const [task, setTask] = useState('')
+  const [refs, setRefs] = useState<VaultFile[]>([])
   const [submittedTask, setSubmittedTask] = useState<string | null>(null)
   const [steps, setSteps] = useState<AgentStep[]>([])
   const [runId, setRunId] = useState<string | null>(null)
   const [writeReq, setWriteReq] = useState<AgentWriteRequest | null>(null)
   const runRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const notes = useMemo(() => files.filter((f) => f.kind === 'note'), [files])
 
   useEffect(() => {
     runRef.current = runId
@@ -59,12 +54,14 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
     const t = task.trim()
     if (!t || runId) return
     const id = crypto.randomUUID()
+    const refPaths = refs.map((r) => r.path)
     setSubmittedTask(t)
     setTask('')
+    setRefs([])
     setSteps([])
     setWriteReq(null)
     setRunId(id)
-    void window.api.agentRun(id, t)
+    void window.api.agentRun(id, t, refPaths)
   }
 
   const answerWrite = (approved: boolean): void => {
@@ -183,44 +180,21 @@ export function AgentPanel({ onOpenNote }: AgentPanelProps): React.JSX.Element {
       </div>
 
       <div className="border-t border-zinc-200 p-2.5 dark:border-zinc-800">
-        <div className="focus-within:border-primary focus-within:ring-primary-soft rounded-xl border border-zinc-200 bg-white shadow-sm focus-within:ring-2 dark:border-zinc-700 dark:bg-zinc-900">
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault()
-                start()
-              }
-            }}
-            rows={2}
-            placeholder="交辦任務…"
-            className="w-full resize-none bg-transparent px-3 pt-2.5 text-sm outline-none placeholder:text-zinc-400"
-          />
-          <div className="flex items-center justify-between px-2 pb-2">
-            <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
-              Enter 執行 · Shift+Enter 換行
-            </span>
-            {runId ? (
-              <button
-                onClick={() => void window.api.agentStop(runId)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                title="停止"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button
-                onClick={start}
-                disabled={!task.trim()}
-                className="from-primary to-secondary text-primary-fg flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm hover:opacity-85 disabled:opacity-40"
-                title="執行"
-              >
-                <Play className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+        <ChatInput
+          value={task}
+          onChange={setTask}
+          onSubmit={start}
+          onStop={() => runId && void window.api.agentStop(runId)}
+          pending={runId !== null}
+          placeholder="交辦任務…（打 / 引用筆記）"
+          hint="Enter 執行 · Shift+Enter 換行 · / 引用筆記"
+          files={notes}
+          refs={refs}
+          onAddRef={(f) =>
+            setRefs((prev) => (prev.some((r) => r.path === f.path) ? prev : [...prev, f]))
+          }
+          onRemoveRef={(path) => setRefs((prev) => prev.filter((r) => r.path !== path))}
+        />
       </div>
     </div>
   )

@@ -114,12 +114,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('search:query', (_event, query: string, k?: number) => indexer.search(query, k))
   ipcMain.handle('index:status', () => indexer.getStatus())
   ipcMain.handle('index:rebuild', () => indexer.rebuild())
-  ipcMain.handle('chat:ask', (event, id: string, messages: ChatMessage[]) => {
-    void chat.ask(event.sender, id, messages)
+  ipcMain.handle('chat:ask', (event, id: string, messages: ChatMessage[], refPaths?: string[]) => {
+    void chat.ask(event.sender, id, messages, refPaths)
   })
   ipcMain.handle('chat:stop', (_event, id: string) => chat.stop(id))
-  ipcMain.handle('agent:run', (event, id: string, task: string) => {
-    void agent.run(event.sender, id, task)
+  ipcMain.handle('agent:run', (event, id: string, task: string, refPaths?: string[]) => {
+    void agent.run(event.sender, id, task, refPaths)
   })
   ipcMain.handle('agent:stop', (_event, id: string) => agent.stop(id))
   ipcMain.handle('agent:resolve-write', (_event, requestId: string, approved: boolean) =>

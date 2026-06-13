@@ -127,15 +127,20 @@ class AgentService {
   private controllers = new Map<string, AbortController>()
   private pendingWrites = new Map<string, (approved: boolean) => void>()
 
-  async run(sender: WebContents, id: string, task: string): Promise<void> {
+  async run(sender: WebContents, id: string, task: string, refPaths: string[] = []): Promise<void> {
     const controller = new AbortController()
     this.controllers.set(id, controller)
     const emit = (step: AgentStep): void => {
       if (!sender.isDestroyed()) sender.send('agent:step', { id, step })
     }
+    // 使用者以 `/` 指定的筆記：附上「標題 → 路徑」對應，讓 agent 直接用 read_note 讀取
+    const refLines = refPaths.map((p) => `- ${p}`).join('\n')
+    const userContent = refLines
+      ? `${task}\n\n（使用者引用的筆記路徑，可用 read_note 讀取）：\n${refLines}`
+      : task
     const messages: OllamaChatMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: task }
+      { role: 'user', content: userContent }
     ]
     try {
       let invalidCount = 0

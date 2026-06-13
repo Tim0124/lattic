@@ -267,10 +267,10 @@ function App(): React.JSX.Element {
             </div>
             {/* 切 tab 保持 mounted，保留對話歷史與進行中的 streaming / agent run */}
             <div className={cn('min-h-0 flex-1', activeTab !== 'chat' && 'hidden')}>
-              <ChatPanel onOpenNote={openNote} />
+              <ChatPanel onOpenNote={openNote} files={files} />
             </div>
             <div className={cn('min-h-0 flex-1', activeTab !== 'agent' && 'hidden')}>
-              <AgentPanel onOpenNote={openNote} />
+              <AgentPanel onOpenNote={openNote} files={files} />
             </div>
           </div>
         </ResizablePanel>
