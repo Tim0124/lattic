@@ -80,6 +80,7 @@ class Indexer {
   private storePath = ''
   private syncing = false
   private pendingSync = false
+  private forceRebuild = false
 
   async init(): Promise<void> {
     this.storePath = join(app.getPath('userData'), 'vector-index.json')
@@ -103,6 +104,12 @@ class Indexer {
     this.statusListeners.add(cb)
   }
 
+  /** 捨棄所有已嵌入的向量，從頭重新建立索引 */
+  async rebuild(): Promise<void> {
+    this.forceRebuild = true
+    await this.sync()
+  }
+
   /** 與 vault 現況對齊：新增/變更的檔案 re-embed，刪除的移出索引 */
   async sync(): Promise<void> {
     if (this.syncing) {
@@ -111,6 +118,11 @@ class Indexer {
     }
     this.syncing = true
     try {
+      // forceRebuild 在取得鎖後才清空，確保清空原子地發生在 sync pass 開始
+      if (this.forceRebuild) {
+        this.forceRebuild = false
+        this.files.clear()
+      }
       const notes = vault.listNotes()
       const alive = new Set(notes.map((n) => n.path))
       for (const path of [...this.files.keys()]) {

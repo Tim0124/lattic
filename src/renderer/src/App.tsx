@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, Bot, MessagesSquare, Settings } from 'lucide-react'
+import { BookOpen, Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
 import type { SearchResult, IndexStatus } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
 import { NoteView } from './components/NoteView'
@@ -17,8 +17,15 @@ import { MediaView } from './components/MediaView'
 import { useFiles, useNote, useVaultInvalidation } from './lib/queries'
 import { cn } from './lib/utils'
 
-function IndexStatusBadge({ status }: { status: IndexStatus }): React.JSX.Element | null {
+function IndexStatusBadge({
+  status,
+  onRebuild
+}: {
+  status: IndexStatus
+  onRebuild: () => void
+}): React.JSX.Element | null {
   if (status.state === 'idle') return null
+  const indexing = status.state === 'indexing'
   const dot = {
     indexing: 'bg-amber-400 animate-pulse',
     ready: 'bg-emerald-400',
@@ -32,9 +39,17 @@ function IndexStatusBadge({ status }: { status: IndexStatus }): React.JSX.Elemen
   return (
     <div className="flex items-center gap-1.5 border-t border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
       <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)} />
-      <span className="truncate text-[11px] text-zinc-400" title={text}>
+      <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-400" title={text}>
         {text}
       </span>
+      <button
+        onClick={onRebuild}
+        disabled={indexing}
+        title="重建索引"
+        className="shrink-0 rounded p-0.5 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+      >
+        <RefreshCw className={cn('h-3 w-3', indexing && 'animate-spin')} />
+      </button>
     </div>
   )
 }
@@ -135,7 +150,12 @@ function App(): React.JSX.Element {
                 <NoteTree files={files} selectedPath={selectedPath} onSelect={setSelectedPath} />
               )}
             </div>
-            {indexStatus && <IndexStatusBadge status={indexStatus} />}
+            {indexStatus && (
+              <IndexStatusBadge
+                status={indexStatus}
+                onRebuild={() => void window.api.rebuildIndex()}
+              />
+            )}
           </div>
         </ResizablePanel>
 

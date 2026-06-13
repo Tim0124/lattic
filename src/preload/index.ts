@@ -30,6 +30,7 @@ const api = {
   search: (query: string, k?: number): Promise<SearchResult[]> =>
     ipcRenderer.invoke('search:query', query, k),
   getIndexStatus: (): Promise<IndexStatus> => ipcRenderer.invoke('index:status'),
+  rebuildIndex: (): Promise<void> => ipcRenderer.invoke('index:rebuild'),
   chatAsk: (id: string, messages: ChatMessage[]): Promise<void> =>
     ipcRenderer.invoke('chat:ask', id, messages),
   chatStop: (id: string): Promise<void> => ipcRenderer.invoke('chat:stop', id),

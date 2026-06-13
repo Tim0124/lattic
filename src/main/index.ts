@@ -100,6 +100,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('vault:read', (_event, relPath: string) => vault.readNote(relPath))
   ipcMain.handle('search:query', (_event, query: string, k?: number) => indexer.search(query, k))
   ipcMain.handle('index:status', () => indexer.getStatus())
+  ipcMain.handle('index:rebuild', () => indexer.rebuild())
   ipcMain.handle('chat:ask', (event, id: string, messages: ChatMessage[]) => {
     void chat.ask(event.sender, id, messages)
   })
