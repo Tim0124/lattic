@@ -60,7 +60,6 @@ export function NoteView({ doc, resolveWikiTarget, onNavigate }: NoteViewProps):
           ref={articleRef}
           className="prose prose-zinc dark:prose-invert prose-headings:scroll-mt-4 mx-auto max-w-3xl px-10 py-10"
         >
-          <h1>{doc.title}</h1>
           <Markdown
             remarkPlugins={[remarkGfm]}
             // react-markdown 預設會濾掉非 http 開頭的 URL，這裡放行自訂的 wiki: 與 vault:
