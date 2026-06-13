@@ -4,11 +4,16 @@ import remarkGfm from 'remark-gfm'
 import { AlertTriangle, Bot, FilePen, FilePlus2, FileDown, Wrench } from 'lucide-react'
 import type { AgentStep, AgentWriteRequest, VaultFile } from 'src/share/types'
 import { ChatInput } from './ChatInput'
+import { useI18n } from '../lib/i18n'
 
 const WRITE_MODE = {
-  create: { Icon: FilePlus2, label: 'Agent 想建立新筆記', confirm: '同意建立' },
-  overwrite: { Icon: FilePen, label: 'Agent 想覆寫筆記', confirm: '同意覆寫' },
-  append: { Icon: FileDown, label: 'Agent 想追加內容到筆記', confirm: '同意追加' }
+  create: { Icon: FilePlus2, labelKey: 'agent.createTitle', confirmKey: 'agent.confirmCreate' },
+  overwrite: {
+    Icon: FilePen,
+    labelKey: 'agent.overwriteTitle',
+    confirmKey: 'agent.confirmOverwrite'
+  },
+  append: { Icon: FileDown, labelKey: 'agent.appendTitle', confirmKey: 'agent.confirmAppend' }
 } as const
 
 interface AgentPanelProps {
@@ -17,6 +22,7 @@ interface AgentPanelProps {
 }
 
 export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.Element {
+  const { t } = useI18n()
   const [task, setTask] = useState('')
   const [refs, setRefs] = useState<VaultFile[]>([])
   const [submittedTask, setSubmittedTask] = useState<string | null>(null)
@@ -79,11 +85,11 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
               <Bot className="text-secondary h-5 w-5" />
             </div>
             <p className="text-sm text-zinc-400">
-              交辦任務，例如
+              {t('agent.emptyHint1')}
               <br />
-              「整理所有提到 RAG 的筆記，寫一篇總覽」
+              {t('agent.emptyExample')}
             </p>
-            <p className="text-xs text-zinc-300 dark:text-zinc-600">寫入筆記前會先徵求你的同意</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-600">{t('agent.emptyHint2')}</p>
           </div>
         )}
         {submittedTask && (
@@ -134,7 +140,7 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
         {runId && !writeReq && (
           <div className="flex items-center gap-2 text-sm text-zinc-400">
             <span className="bg-secondary h-2 w-2 animate-pulse rounded-full" />
-            執行中…
+            {t('agent.running')}
           </div>
         )}
 
@@ -145,7 +151,7 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
                 const Icon = WRITE_MODE[writeReq.mode].Icon
                 return <Icon className="h-4 w-4" />
               })()}
-              {WRITE_MODE[writeReq.mode].label}
+              {t(WRITE_MODE[writeReq.mode].labelKey)}
             </div>
             <button
               onClick={() => onOpenNote(writeReq.path)}
@@ -155,7 +161,7 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
             </button>
             {writeReq.mode === 'append' && (
               <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                以下內容會接到筆記末端：
+                {t('agent.appendHint')}
               </div>
             )}
             <pre className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-amber-200 bg-white p-2 text-xs whitespace-pre-wrap dark:border-amber-900 dark:bg-zinc-900">
@@ -166,13 +172,13 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
                 onClick={() => answerWrite(false)}
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1 text-xs hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
               >
-                拒絕
+                {t('agent.reject')}
               </button>
               <button
                 onClick={() => answerWrite(true)}
                 className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-amber-500"
               >
-                {WRITE_MODE[writeReq.mode].confirm}
+                {t(WRITE_MODE[writeReq.mode].confirmKey)}
               </button>
             </div>
           </div>
@@ -186,8 +192,8 @@ export function AgentPanel({ onOpenNote, files }: AgentPanelProps): React.JSX.El
           onSubmit={start}
           onStop={() => runId && void window.api.agentStop(runId)}
           pending={runId !== null}
-          placeholder="交辦任務…（打 / 引用筆記）"
-          hint="Enter 執行 · Shift+Enter 換行 · / 引用筆記"
+          placeholder={t('agent.inputPlaceholder')}
+          hint={t('agent.inputHint')}
           files={notes}
           refs={refs}
           onAddRef={(f) =>

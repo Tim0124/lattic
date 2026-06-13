@@ -28,6 +28,7 @@ import { useTheme } from './lib/theme'
 import { createWikiResolver } from './lib/wikilink'
 import { MediaView } from './components/MediaView'
 import { useFiles, useNote, useVaultInvalidation } from './lib/queries'
+import { useI18n } from './lib/i18n'
 import { cn } from './lib/utils'
 
 const TABS_KEY = 'my-wiki-tabs'
@@ -51,6 +52,7 @@ function IndexStatusBadge({
   status: IndexStatus
   onRebuild: () => void
 }): React.JSX.Element | null {
+  const { t } = useI18n()
   if (status.state === 'idle') return null
   const indexing = status.state === 'indexing'
   const dot = {
@@ -59,9 +61,9 @@ function IndexStatusBadge({
     error: 'bg-red-500'
   }[status.state]
   const text = {
-    indexing: `索引中 ${status.indexedFiles}/${status.totalFiles}…`,
-    ready: `${status.chunks} chunks`,
-    error: `索引失敗：${status.error}`
+    indexing: t('index.indexing', { done: status.indexedFiles, total: status.totalFiles }),
+    ready: t('index.ready', { chunks: status.chunks }),
+    error: t('index.error', { error: status.error ?? '' })
   }[status.state]
   return (
     <div className="flex items-center gap-1.5 border-t border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
@@ -72,7 +74,7 @@ function IndexStatusBadge({
       <button
         onClick={onRebuild}
         disabled={indexing}
-        title="重建索引"
+        title={t('index.rebuild')}
         className="shrink-0 rounded p-0.5 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
       >
         <RefreshCw className={cn('h-3 w-3', indexing && 'animate-spin')} />
@@ -82,6 +84,7 @@ function IndexStatusBadge({
 }
 
 function Welcome(): React.JSX.Element {
+  const { t } = useI18n()
   return (
     <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       <Spotlight className="-top-40 left-0 md:-top-20 md:left-60" fill="var(--secondary)" />
@@ -90,11 +93,11 @@ function Welcome(): React.JSX.Element {
         aria-hidden
       />
       <div className="relative z-10 flex flex-col items-center gap-3 px-8 text-center">
-        <TextGenerateEffect words="你的筆記，你的模型" gradient className="text-3xl" />
+        <TextGenerateEffect words={t('welcome.title')} gradient className="text-3xl" />
         <p className="max-w-sm text-sm leading-relaxed text-zinc-400">
-          從左側選擇或搜尋一篇筆記開始閱讀，
+          {t('welcome.subtitle1')}
           <br />
-          或在右側用本地 AI 問答與交辦任務
+          {t('welcome.subtitle2')}
         </p>
       </div>
     </div>
@@ -110,6 +113,7 @@ function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
+  const { t } = useI18n()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
@@ -220,14 +224,14 @@ function App(): React.JSX.Element {
               </span>
               <button
                 onClick={() => setSettingsOpen(true)}
-                title="設定"
+                title={t('sidebar.settings')}
                 className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               >
                 <Settings className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => leftPanelRef.current?.collapse()}
-                title="收合側欄"
+                title={t('sidebar.collapse')}
                 className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               >
                 <PanelLeftClose className="h-3.5 w-3.5" />
@@ -301,15 +305,15 @@ function App(): React.JSX.Element {
             <div className="flex h-11 shrink-0 items-center gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
               <button
                 onClick={() => rightPanelRef.current?.collapse()}
-                title="收合 AI 面板"
+                title={t('panel.collapseAi')}
                 className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               >
                 <PanelRightClose className="h-3.5 w-3.5" />
               </button>
               {(
                 [
-                  { key: 'chat', label: '問答', Icon: MessagesSquare },
-                  { key: 'agent', label: 'Agent', Icon: Bot }
+                  { key: 'chat', label: t('panel.chat'), Icon: MessagesSquare },
+                  { key: 'agent', label: t('panel.agent'), Icon: Bot }
                 ] as const
               ).map(({ key, label, Icon }) => (
                 <button
@@ -342,7 +346,7 @@ function App(): React.JSX.Element {
       {leftCollapsed && (
         <button
           onClick={() => leftPanelRef.current?.expand()}
-          title="展開側欄"
+          title={t('sidebar.expand')}
           className="absolute top-2.5 left-2 z-20 rounded-md border border-zinc-200 bg-white/90 p-1.5 text-zinc-500 shadow-sm backdrop-blur hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
           <PanelLeftOpen className="h-4 w-4" />
@@ -351,7 +355,7 @@ function App(): React.JSX.Element {
       {rightCollapsed && (
         <button
           onClick={() => rightPanelRef.current?.expand()}
-          title="展開 AI 面板"
+          title={t('panel.expandAi')}
           className="absolute top-2.5 right-2 z-20 rounded-md border border-zinc-200 bg-white/90 p-1.5 text-zinc-500 shadow-sm backdrop-blur hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
           <PanelRightOpen className="h-4 w-4" />

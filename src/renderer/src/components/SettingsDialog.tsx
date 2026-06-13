@@ -4,6 +4,7 @@ import { FolderOpen, Monitor, Moon, Sun, X } from 'lucide-react'
 import type { AppSettings } from 'src/share/types'
 import { PALETTES, type ThemeSettings } from '../lib/theme'
 import { cn } from '../lib/utils'
+import { LANGS, useI18n } from '../lib/i18n'
 
 interface SettingsDialogProps {
   open: boolean
@@ -13,9 +14,9 @@ interface SettingsDialogProps {
 }
 
 const MODES = [
-  { key: 'light', label: '淺色', Icon: Sun },
-  { key: 'dark', label: '深色', Icon: Moon },
-  { key: 'system', label: '跟隨系統', Icon: Monitor }
+  { key: 'light', labelKey: 'settings.light', Icon: Sun },
+  { key: 'dark', labelKey: 'settings.dark', Icon: Moon },
+  { key: 'system', labelKey: 'settings.system', Icon: Monitor }
 ] as const
 
 function ModelSelect({
@@ -50,6 +51,7 @@ export function SettingsDialog({
   settings,
   onChange
 }: SettingsDialogProps): React.JSX.Element {
+  const { t, lang, setLang } = useI18n()
   const [vaultPath, setVaultPath] = useState('')
   const [models, setModels] = useState<string[]>([])
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
@@ -102,7 +104,7 @@ export function SettingsDialog({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">設定</h2>
+              <h2 className="text-sm font-semibold">{t('settings.title')}</h2>
               <button
                 onClick={onClose}
                 className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
@@ -112,7 +114,7 @@ export function SettingsDialog({
             </div>
 
             <div className="mt-4">
-              <div className="text-xs font-medium text-zinc-500">Vault 資料夾</div>
+              <div className="text-xs font-medium text-zinc-500">{t('settings.vault')}</div>
               <div className="mt-2 flex items-center gap-2 rounded-xl border border-zinc-200 p-2 dark:border-zinc-700">
                 <FolderOpen className="h-4 w-4 shrink-0 text-amber-500/80" />
                 <span
@@ -120,25 +122,27 @@ export function SettingsDialog({
                   title={vaultPath}
                   dir="rtl"
                 >
-                  {vaultPath || '載入中…'}
+                  {vaultPath || '…'}
                 </span>
                 <button
                   onClick={pickVault}
                   className="bg-primary text-primary-fg shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium hover:opacity-90"
                 >
-                  變更
+                  {t('settings.vaultChange')}
                 </button>
               </div>
-              <p className="mt-1 text-[11px] text-zinc-400">變更後會重新掃描並建立索引</p>
+              <p className="mt-1 text-[11px] text-zinc-400">{t('settings.vaultHint')}</p>
             </div>
 
             {appSettings && (
               <div className="mt-4">
-                <div className="text-xs font-medium text-zinc-500">模型與檢索</div>
+                <div className="text-xs font-medium text-zinc-500">
+                  {t('settings.modelsSection')}
+                </div>
                 <div className="mt-2 space-y-2">
                   <label className="flex items-center justify-between gap-2">
                     <span className="text-xs text-zinc-600 dark:text-zinc-300">
-                      問答 / Agent 模型
+                      {t('settings.chatModel')}
                     </span>
                     <ModelSelect
                       value={appSettings.chatModel}
@@ -147,7 +151,9 @@ export function SettingsDialog({
                     />
                   </label>
                   <label className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-zinc-600 dark:text-zinc-300">Embedding 模型</span>
+                    <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                      {t('settings.embedModel')}
+                    </span>
                     <ModelSelect
                       value={appSettings.embedModel}
                       models={models}
@@ -156,7 +162,7 @@ export function SettingsDialog({
                   </label>
                   <label className="flex items-center justify-between gap-2">
                     <span className="text-xs text-zinc-600 dark:text-zinc-300">
-                      檢索 chunk 數（top-k）
+                      {t('settings.topK')}
                     </span>
                     <span className="flex items-center gap-2">
                       <input
@@ -173,14 +179,14 @@ export function SettingsDialog({
                     </span>
                   </label>
                 </div>
-                <p className="mt-1 text-[11px] text-zinc-400">更換 Embedding 模型會重建整個索引</p>
+                <p className="mt-1 text-[11px] text-zinc-400">{t('settings.modelsHint')}</p>
               </div>
             )}
 
             <div className="mt-4">
-              <div className="text-xs font-medium text-zinc-500">外觀</div>
+              <div className="text-xs font-medium text-zinc-500">{t('settings.appearance')}</div>
               <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
-                {MODES.map(({ key, label, Icon }) => (
+                {MODES.map(({ key, labelKey, Icon }) => (
                   <button
                     key={key}
                     onClick={() => onChange({ mode: key })}
@@ -192,14 +198,14 @@ export function SettingsDialog({
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="mt-4">
-              <div className="text-xs font-medium text-zinc-500">主題色</div>
+              <div className="text-xs font-medium text-zinc-500">{t('settings.theme')}</div>
               <div className="mt-3 flex items-center gap-4">
                 {PALETTES.map((p) => {
                   const selected = settings.palette === p.id
@@ -222,7 +228,25 @@ export function SettingsDialog({
               </div>
             </div>
 
-            <p className="mt-4 text-center text-[11px] text-zinc-400">設定即時生效並自動儲存</p>
+            <div className="mt-4">
+              <div className="text-xs font-medium text-zinc-500">{t('settings.language')}</div>
+              <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
+                {LANGS.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLang(l.id)}
+                    className={cn(
+                      'rounded-lg py-1.5 text-xs transition-colors',
+                      lang === l.id
+                        ? 'bg-white font-medium text-zinc-800 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    )}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </motion.div>
       )}

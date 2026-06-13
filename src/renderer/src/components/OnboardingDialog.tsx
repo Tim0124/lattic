@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import type { OllamaStatus } from 'src/share/types'
+import { useI18n } from '../lib/i18n'
 
 interface OnboardingDialogProps {
   status: OllamaStatus
@@ -22,6 +23,7 @@ export function OnboardingDialog({
   onRecheck,
   onDismiss
 }: OnboardingDialogProps): React.JSX.Element {
+  const { t } = useI18n()
   const [checking, setChecking] = useState(false)
 
   const recheck = async (): Promise<void> => {
@@ -35,9 +37,9 @@ export function OnboardingDialog({
 
   const missing: { label: string; model: string }[] = []
   if (status.running && !status.chatReady)
-    missing.push({ label: '問答 / Agent 模型', model: status.chatModel })
+    missing.push({ label: t('onboarding.chatModel'), model: status.chatModel })
   if (status.running && !status.embedReady)
-    missing.push({ label: 'Embedding 模型', model: status.embedModel })
+    missing.push({ label: t('onboarding.embedModel'), model: status.embedModel })
 
   return (
     <AnimatePresence>
@@ -57,18 +59,15 @@ export function OnboardingDialog({
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
             </span>
-            <h2 className="text-base font-semibold">需要先設定本地 AI</h2>
+            <h2 className="text-base font-semibold">{t('onboarding.title')}</h2>
           </div>
 
           {!status.running ? (
             <div className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
-              <p>
-                找不到正在運行的 <strong>Ollama</strong>。Lattic 的搜尋與問答都靠本機 Ollama，
-                請先安裝並啟動它：
-              </p>
+              <p>{t('onboarding.notRunning')}</p>
               <CommandRow cmd="brew install ollama" />
               <CommandRow cmd="ollama serve" />
-              <p>啟動後再 pull 需要的模型：</p>
+              <p>{t('onboarding.thenPull')}</p>
               <CommandRow cmd={`ollama pull ${status.chatModel}`} />
               <CommandRow cmd={`ollama pull ${status.embedModel}`} />
             </div>
@@ -76,7 +75,7 @@ export function OnboardingDialog({
             <div className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
               <p className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                Ollama 已在運行，但還缺少需要的模型：
+                {t('onboarding.runningButMissing')}
               </p>
               {missing.map((m) => (
                 <div key={m.model}>
@@ -87,16 +86,14 @@ export function OnboardingDialog({
             </div>
           )}
 
-          <p className="mt-4 text-xs text-zinc-400">
-            裝好後按「重新檢查」；模型就緒後會自動開始建立索引。也可在設定中更換模型。
-          </p>
+          <p className="mt-4 text-xs text-zinc-400">{t('onboarding.footer')}</p>
 
           <div className="mt-5 flex justify-end gap-2">
             <button
               onClick={onDismiss}
               className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
             >
-              先略過
+              {t('onboarding.skip')}
             </button>
             <button
               onClick={recheck}
@@ -108,7 +105,7 @@ export function OnboardingDialog({
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              重新檢查
+              {t('onboarding.recheck')}
             </button>
           </div>
         </motion.div>

@@ -1,6 +1,7 @@
 import { FileText, Globe, Image, X } from 'lucide-react'
 import type { VaultFile, VaultFileKind } from 'src/share/types'
 import { cn } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 const KIND_ICONS: Record<VaultFileKind, typeof FileText> = {
   note: FileText,
@@ -16,6 +17,7 @@ interface TabBarProps {
 }
 
 export function TabBar({ tabs, activePath, onSelect, onClose }: TabBarProps): React.JSX.Element {
+  const { t } = useI18n()
   return (
     <div className="flex h-11 shrink-0 items-stretch overflow-x-auto border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
       {tabs.map((tab) => {
@@ -42,7 +44,7 @@ export function TabBar({ tabs, activePath, onSelect, onClose }: TabBarProps): Re
                 e.stopPropagation()
                 onClose(tab.path)
               }}
-              title="關閉分頁"
+              title={t('tab.close')}
               className="ml-1 shrink-0 rounded p-0.5 text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
             >
               <X className="h-3 w-3" />

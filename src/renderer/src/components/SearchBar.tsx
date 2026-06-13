@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Loader2, Search, X } from 'lucide-react'
 import type { SearchResult } from 'src/share/types'
+import { useI18n } from '../lib/i18n'
 
 interface SearchBarProps {
   onResults: (results: SearchResult[] | null) => void
@@ -9,6 +10,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onResults, disabled, inputRef }: SearchBarProps): React.JSX.Element {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
 
@@ -50,7 +52,7 @@ export function SearchBar({ onResults, disabled, inputRef }: SearchBarProps): Re
             if (e.key === 'Enter') void runSearch()
             if (e.key === 'Escape') clear()
           }}
-          placeholder={disabled ? '索引建立中…' : '語意搜尋'}
+          placeholder={disabled ? t('search.indexing') : t('search.placeholder')}
           disabled={disabled}
           className="focus:border-primary focus:ring-primary-soft w-full rounded-lg border border-zinc-200 bg-white py-1.5 pr-7 pl-8 text-[13px] shadow-sm outline-none placeholder:text-zinc-400 focus:ring-2 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
         />

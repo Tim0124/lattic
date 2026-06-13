@@ -5,6 +5,7 @@ import { Eraser, FileText, Sparkles } from 'lucide-react'
 import type { ChatMessage, ChatSource, VaultFile } from 'src/share/types'
 import { cn } from '../lib/utils'
 import { ChatInput } from './ChatInput'
+import { useI18n } from '../lib/i18n'
 
 interface UiMessage {
   role: 'user' | 'assistant'
@@ -19,6 +20,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Element {
+  const { t } = useI18n()
   const [messages, setMessages] = useState<UiMessage[]>([])
   const [input, setInput] = useState('')
   const [refs, setRefs] = useState<VaultFile[]>([])
@@ -93,11 +95,11 @@ export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Elem
         <button
           onClick={() => setMessages([])}
           disabled={pendingId !== null || messages.length === 0}
-          title="清除對話"
+          title={t('chat.clear')}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
         >
           <Eraser className="h-3 w-3" />
-          清除
+          {t('chat.clear')}
         </button>
       </div>
 
@@ -108,9 +110,9 @@ export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Elem
               <Sparkles className="text-secondary h-5 w-5" />
             </div>
             <p className="text-sm text-zinc-400">
-              問任何問題
+              {t('chat.emptyTitle')}
               <br />
-              我會先檢索你的筆記再回答
+              {t('chat.emptyHint')}
             </p>
           </div>
         )}
@@ -130,7 +132,7 @@ export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Elem
                   !m.error && (
                     <div className="flex items-center gap-2 text-zinc-400">
                       <span className="bg-secondary h-2 w-2 animate-pulse rounded-full" />
-                      檢索筆記中…
+                      {t('chat.retrieving')}
                     </div>
                   )
                 )}
@@ -167,8 +169,8 @@ export function ChatPanel({ onOpenNote, files }: ChatPanelProps): React.JSX.Elem
           onSubmit={send}
           onStop={() => pendingId && void window.api.chatStop(pendingId)}
           pending={pendingId !== null}
-          placeholder="輸入問題…（打 / 引用筆記）"
-          hint="Enter 送出 · Shift+Enter 換行 · / 引用筆記"
+          placeholder={t('chat.inputPlaceholder')}
+          hint={t('chat.inputHint')}
           files={notes}
           refs={refs}
           onAddRef={(f) =>

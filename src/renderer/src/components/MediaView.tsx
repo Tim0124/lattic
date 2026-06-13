@@ -2,6 +2,7 @@ import { Maximize, ZoomIn, ZoomOut } from 'lucide-react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import type { VaultFile } from 'src/share/types'
 import { vaultUrl } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 interface MediaViewProps {
   file: VaultFile
@@ -12,6 +13,7 @@ const toolButtonClass =
 
 /** 圖片與 HTML 的中欄檢視 */
 export function MediaView({ file }: MediaViewProps): React.JSX.Element {
+  const { t } = useI18n()
   const src = vaultUrl(file.path)
 
   return (
@@ -27,13 +29,25 @@ export function MediaView({ file }: MediaViewProps): React.JSX.Element {
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>
                 <div className="absolute top-3 right-3 z-10 flex gap-1">
-                  <button onClick={() => zoomOut()} title="縮小" className={toolButtonClass}>
+                  <button
+                    onClick={() => zoomOut()}
+                    title={t('media.zoomOut')}
+                    className={toolButtonClass}
+                  >
                     <ZoomOut className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => zoomIn()} title="放大" className={toolButtonClass}>
+                  <button
+                    onClick={() => zoomIn()}
+                    title={t('media.zoomIn')}
+                    className={toolButtonClass}
+                  >
                     <ZoomIn className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => resetTransform()} title="重設" className={toolButtonClass}>
+                  <button
+                    onClick={() => resetTransform()}
+                    title={t('media.reset')}
+                    className={toolButtonClass}
+                  >
                     <Maximize className="h-3.5 w-3.5" />
                   </button>
                 </div>

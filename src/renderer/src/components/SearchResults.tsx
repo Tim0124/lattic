@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { SearchX } from 'lucide-react'
 import type { SearchResult } from 'src/share/types'
+import { useI18n } from '../lib/i18n'
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -10,13 +11,14 @@ interface SearchResultsProps {
 
 /** 卡片 hover 背景採 Aceternity Card Hover Effect 的 layoutId 手法 */
 export function SearchResults({ results, onSelect }: SearchResultsProps): React.JSX.Element {
+  const { t } = useI18n()
   const [hovered, setHovered] = useState<number | null>(null)
 
   if (results.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 p-8 text-zinc-400">
         <SearchX className="h-6 w-6" />
-        <span className="text-sm">沒有找到相關內容</span>
+        <span className="text-sm">{t('search.empty')}</span>
       </div>
     )
   }

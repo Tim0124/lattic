@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { FileText, SendHorizontal, Square, X } from 'lucide-react'
 import type { VaultFile } from 'src/share/types'
 import { cn } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 interface ChatInputProps {
   value: string
@@ -50,6 +51,7 @@ export function ChatInput({
   onAddRef,
   onRemoveRef
 }: ChatInputProps): React.JSX.Element {
+  const { t } = useI18n()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const [trigger, setTrigger] = useState<Trigger | null>(null)
@@ -185,7 +187,7 @@ export function ChatInput({
               <span className="max-w-[140px] truncate">{r.title}</span>
               <button
                 onClick={() => onRemoveRef(r.path)}
-                title="移除引用"
+                title={t('chatinput.removeRef')}
                 className="rounded hover:bg-black/10 dark:hover:bg-white/10"
               >
                 <X className="h-3 w-3" />
@@ -212,7 +214,7 @@ export function ChatInput({
         {pending ? (
           <button
             onClick={onStop}
-            title="停止"
+            title={t('chat.stop')}
             className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             <Square className="h-3.5 w-3.5" />
@@ -221,7 +223,7 @@ export function ChatInput({
           <button
             onClick={onSubmit}
             disabled={!value.trim()}
-            title="送出"
+            title={t('chat.send')}
             className="from-primary to-secondary text-primary-fg flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm hover:opacity-85 disabled:opacity-40"
           >
             <SendHorizontal className="h-3.5 w-3.5" />
