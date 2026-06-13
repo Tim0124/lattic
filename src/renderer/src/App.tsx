@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
+import { Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
+import logo from './assets/logo.svg'
 import type { SearchResult, IndexStatus, VaultFile } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
 import { NoteView } from './components/NoteView'
@@ -172,10 +173,8 @@ function App(): React.JSX.Element {
         <ResizablePanel defaultSize={20} minSize={14} maxSize={32}>
           <div className="flex h-full flex-col bg-zinc-50 dark:bg-zinc-900/50">
             <div className="flex h-11 shrink-0 items-center gap-2 border-b border-zinc-200 px-3 dark:border-zinc-800">
-              <div className="from-primary to-secondary flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br shadow-sm">
-                <BookOpen className="h-3.5 w-3.5 text-white" />
-              </div>
-              <span className="text-[13px] font-semibold tracking-tight">My Wiki</span>
+              <img src={logo} alt="Lattic" className="h-6 w-6 rounded-md shadow-sm" />
+              <span className="text-[13px] font-semibold tracking-tight">Lattic</span>
               <span className="ml-auto rounded-full bg-zinc-200/70 px-1.5 text-[10px] tabular-nums text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                 {notes.length}
               </span>

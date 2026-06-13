@@ -62,7 +62,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.timkao.lattic')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

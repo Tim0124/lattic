@@ -1,11 +1,11 @@
-# VaultMind
+# Lattic
 
 > 一個讀取 Obsidian vault、完全在本機運行 AI 的桌面 wiki。
 
-VaultMind 是一個 Electron 桌面應用，把你的 Obsidian 筆記庫（vault）變成可閱讀、可語意搜尋、可問答、可交辦任務的知識工作站。所有 AI 能力——向量搜尋、RAG 問答、agent 操作——都透過本機的 [Ollama](https://ollama.com) 運行，**筆記內容不會離開你的電腦**。
+Lattic 是一個 Electron 桌面應用，把你的 Obsidian 筆記庫（vault）變成可閱讀、可語意搜尋、可問答、可交辦任務的知識工作站。所有 AI 能力——向量搜尋、RAG 問答、agent 操作——都透過本機的 [Ollama](https://ollama.com) 運行，**筆記內容不會離開你的電腦**。
 
 <!-- 畫面截圖：請將應用截圖放到 docs/screenshot.png -->
-<!-- ![VaultMind](docs/screenshot.png) -->
+<!-- ![Lattic](docs/screenshot.png) -->
 
 ---
 
@@ -65,13 +65,13 @@ ollama pull gemma4:e4b   # 問答與 agent（約 9.6 GB）
 ollama pull bge-m3       # 向量 embedding（約 1.2 GB）
 ```
 
-> VaultMind 連線到「已在運行」的本機 Ollama，並不會內嵌或自動安裝它。啟動 app 前請確認 Ollama 正在運行。
+> Lattic 連線到「已在運行」的本機 Ollama，並不會內嵌或自動安裝它。啟動 app 前請確認 Ollama 正在運行。
 
 ### 2. 安裝專案
 
 ```bash
-git clone https://github.com/Tim0124/vaultmind.git
-cd vaultmind
+git clone https://github.com/Tim0124/lattic.git
+cd lattic
 npm install
 ```
 

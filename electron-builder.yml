@@ -1,5 +1,5 @@
-appId: com.timkao.vaultmind
-productName: VaultMind
+appId: com.timkao.lattic
+productName: Lattic
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: VaultMind
+  executableName: Lattic
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
