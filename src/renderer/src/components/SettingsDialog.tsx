@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Monitor, Moon, Sun, X } from 'lucide-react'
+import { FolderOpen, Monitor, Moon, Sun, X } from 'lucide-react'
 import { PALETTES, type ThemeSettings } from '../lib/theme'
 import { cn } from '../lib/utils'
 
@@ -23,6 +23,13 @@ export function SettingsDialog({
   settings,
   onChange
 }: SettingsDialogProps): React.JSX.Element {
+  const [vaultPath, setVaultPath] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    void window.api.getVaultPath().then(setVaultPath)
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent): void => {
@@ -31,6 +38,11 @@ export function SettingsDialog({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  const pickVault = async (): Promise<void> => {
+    const picked = await window.api.pickVault()
+    if (picked) setVaultPath(picked)
+  }
 
   return (
     <AnimatePresence>
@@ -58,6 +70,27 @@ export function SettingsDialog({
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            <div className="mt-4">
+              <div className="text-xs font-medium text-zinc-500">Vault 資料夾</div>
+              <div className="mt-2 flex items-center gap-2 rounded-xl border border-zinc-200 p-2 dark:border-zinc-700">
+                <FolderOpen className="h-4 w-4 shrink-0 text-amber-500/80" />
+                <span
+                  className="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-300"
+                  title={vaultPath}
+                  dir="rtl"
+                >
+                  {vaultPath || '載入中…'}
+                </span>
+                <button
+                  onClick={pickVault}
+                  className="bg-primary text-primary-fg shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium hover:opacity-90"
+                >
+                  變更
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-400">變更後會重新掃描並建立索引</p>
             </div>
 
             <div className="mt-4">

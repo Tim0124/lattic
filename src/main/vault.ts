@@ -4,8 +4,6 @@ import { dirname, join, resolve, extname, basename } from 'path'
 import matter from 'gray-matter'
 import type { VaultFile, VaultFileKind, NoteDoc } from '../share/types'
 
-export const VAULT_PATH = ''
-
 const IGNORED_DIRS = new Set(['.obsidian', '.trash', '.git'])
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.avif', '.bmp'])
 const HTML_EXTS = new Set(['.html', '.htm'])
@@ -18,6 +16,7 @@ function kindOf(ext: string): VaultFileKind | null {
 }
 
 class VaultService {
+  private root = ''
   /** relPath -> VaultFile（樹上顯示的檔案：note / image / html） */
   private files = new Map<string, VaultFile>()
   /** 小寫檔名（含副檔名）-> relPath，供 Obsidian 式短檔名解析（附件用） */
@@ -26,9 +25,30 @@ class VaultService {
   private changeListeners = new Set<() => void>()
   private debounceTimer: NodeJS.Timeout | null = null
 
-  async init(): Promise<void> {
+  async init(root: string): Promise<void> {
+    this.root = root
     await this.scan()
-    this.watcher = watch(VAULT_PATH, {
+    this.startWatching()
+  }
+
+  getRoot(): string {
+    return this.root
+  }
+
+  /** 切換 vault 根目錄：關閉舊 watcher、重掃、重啟 watcher，並通知變動以觸發 reindex 與 UI 更新 */
+  async setRoot(root: string): Promise<void> {
+    this.root = root
+    if (this.watcher) {
+      await this.watcher.close()
+      this.watcher = null
+    }
+    await this.scan()
+    this.startWatching()
+    this.changeListeners.forEach((cb) => cb())
+  }
+
+  private startWatching(): void {
+    this.watcher = watch(this.root, {
       ignored: (path) => basename(path).startsWith('.') || IGNORED_DIRS.has(basename(path)),
       ignoreInitial: true
     })
@@ -88,7 +108,7 @@ class VaultService {
     if (!abs) throw new Error(`路徑不在 vault 內：${relPath}`)
     await mkdir(dirname(abs), { recursive: true })
     await writeFile(abs, content, 'utf-8')
-    return abs.slice(VAULT_PATH.length + 1)
+    return abs.slice(this.root.length + 1)
   }
 
   /**
@@ -99,8 +119,8 @@ class VaultService {
     const candidate = relPath.includes('/')
       ? relPath
       : (this.filesByName.get(relPath.toLowerCase()) ?? relPath)
-    const abs = resolve(VAULT_PATH, candidate)
-    if (!abs.startsWith(VAULT_PATH + '/')) return null
+    const abs = resolve(this.root, candidate)
+    if (!abs.startsWith(this.root + '/')) return null
     return abs
   }
 
@@ -117,7 +137,7 @@ class VaultService {
           await walk(abs)
           continue
         }
-        const relPath = abs.slice(VAULT_PATH.length + 1)
+        const relPath = abs.slice(this.root.length + 1)
         filesByName.set(entry.name.toLowerCase(), relPath)
         const ext = extname(entry.name).toLowerCase()
         const kind = kindOf(ext)
@@ -134,7 +154,7 @@ class VaultService {
       }
     }
 
-    await walk(VAULT_PATH)
+    await walk(this.root)
     this.files = files
     this.filesByName = filesByName
   }

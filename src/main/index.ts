@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, net } from 'electron'
+import { app, shell, BrowserWindow, dialog, ipcMain, protocol, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -7,6 +7,7 @@ import { vault } from './vault'
 import { indexer } from './indexer'
 import { chat } from './chat'
 import { agent } from './agent'
+import { getConfig, setVaultPath } from './config'
 import type { ChatMessage } from '../share/types'
 
 // 必須在 app ready 前註冊：standard 讓 vault:// 的 URL 解析與子資源
@@ -65,7 +66,7 @@ app.whenReady().then(async () => {
     return net.fetch(pathToFileURL(abs).toString())
   })
 
-  await vault.init()
+  await vault.init(getConfig().vaultPath)
 
   vault.onChange(() => {
     BrowserWindow.getAllWindows().forEach((win) => {
@@ -82,6 +83,19 @@ app.whenReady().then(async () => {
   void indexer.init()
 
   ipcMain.handle('app:get-version', () => app.getVersion())
+  ipcMain.handle('config:get-vault-path', () => vault.getRoot())
+  ipcMain.handle('config:pick-vault', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '選擇 vault 資料夾',
+      properties: ['openDirectory'],
+      defaultPath: vault.getRoot()
+    })
+    const picked = result.filePaths[0]
+    if (result.canceled || !picked) return null
+    setVaultPath(picked)
+    await vault.setRoot(picked)
+    return picked
+  })
   ipcMain.handle('vault:files', () => vault.listFiles())
   ipcMain.handle('vault:read', (_event, relPath: string) => vault.readNote(relPath))
   ipcMain.handle('search:query', (_event, query: string, k?: number) => indexer.search(query, k))
