@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
-import type { SearchResult, IndexStatus } from 'src/share/types'
+import type { SearchResult, IndexStatus, VaultFile } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
 import { NoteView } from './components/NoteView'
 import { SearchBar } from './components/SearchBar'
 import { SearchResults } from './components/SearchResults'
 import { ChatPanel } from './components/ChatPanel'
 import { AgentPanel } from './components/AgentPanel'
+import { TabBar } from './components/TabBar'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable'
 import { Spotlight } from './components/ui/spotlight'
 import { TextGenerateEffect } from './components/ui/text-generate-effect'
@@ -16,6 +17,20 @@ import { createWikiResolver } from './lib/wikilink'
 import { MediaView } from './components/MediaView'
 import { useFiles, useNote, useVaultInvalidation } from './lib/queries'
 import { cn } from './lib/utils'
+
+const TABS_KEY = 'my-wiki-tabs'
+
+function loadTabs(): { open: string[]; active: string | null } {
+  try {
+    const p = JSON.parse(localStorage.getItem(TABS_KEY) ?? '')
+    return {
+      open: Array.isArray(p.open) ? p.open : [],
+      active: typeof p.active === 'string' ? p.active : null
+    }
+  } catch {
+    return { open: [], active: null }
+  }
+}
 
 function IndexStatusBadge({
   status,
@@ -75,7 +90,8 @@ function Welcome(): React.JSX.Element {
 }
 
 function App(): React.JSX.Element {
-  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [openPaths, setOpenPaths] = useState<string[]>(() => loadTabs().open)
+  const [activePath, setActivePath] = useState<string | null>(() => loadTabs().active)
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'agent'>('chat')
@@ -85,12 +101,45 @@ function App(): React.JSX.Element {
 
   const { data: files = [] } = useFiles()
   const notes = useMemo(() => files.filter((f) => f.kind === 'note'), [files])
-  const selectedFile = useMemo(
-    () => files.find((f) => f.path === selectedPath) ?? null,
-    [files, selectedPath]
+  const fileMap = useMemo(() => new Map(files.map((f) => [f.path, f])), [files])
+  // 開啟的分頁；過濾掉已不存在的檔案（vault 變動或還原舊狀態時）
+  const tabs = useMemo(
+    () => openPaths.map((p) => fileMap.get(p)).filter((f): f is VaultFile => !!f),
+    [openPaths, fileMap]
   )
-  const { data: doc } = useNote(selectedFile?.kind === 'note' ? selectedFile.path : null)
+  const activeFile = activePath ? (fileMap.get(activePath) ?? null) : null
+  const { data: doc } = useNote(activeFile?.kind === 'note' ? activeFile.path : null)
   useVaultInvalidation()
+
+  // 開啟（或聚焦已開啟的）筆記分頁
+  const openNote = useCallback((path: string) => {
+    setOpenPaths((prev) => (prev.includes(path) ? prev : [...prev, path]))
+    setActivePath(path)
+  }, [])
+
+  const closeTab = useCallback(
+    (path: string) => {
+      const idx = openPaths.indexOf(path)
+      const next = openPaths.filter((p) => p !== path)
+      setOpenPaths(next)
+      if (activePath === path) {
+        setActivePath(next.length ? next[Math.min(idx, next.length - 1)] : null)
+      }
+    },
+    [openPaths, activePath]
+  )
+
+  // 分頁狀態持久化
+  useEffect(() => {
+    localStorage.setItem(TABS_KEY, JSON.stringify({ open: openPaths, active: activePath }))
+  }, [openPaths, activePath])
+
+  // Cmd/Ctrl+W 關閉目前分頁（由 main 的 before-input-event 觸發）
+  useEffect(() => {
+    return window.api.onCloseTabShortcut(() => {
+      if (activePath) closeTab(activePath)
+    })
+  }, [activePath, closeTab])
 
   useEffect(() => {
     void window.api.getIndexStatus().then(setIndexStatus)
@@ -145,9 +194,9 @@ function App(): React.JSX.Element {
             />
             <div className="min-h-0 flex-1 overflow-y-auto">
               {results ? (
-                <SearchResults results={results} onSelect={setSelectedPath} />
+                <SearchResults results={results} onSelect={openNote} />
               ) : (
-                <NoteTree files={files} selectedPath={selectedPath} onSelect={setSelectedPath} />
+                <NoteTree files={files} selectedPath={activePath} onSelect={openNote} />
               )}
             </div>
             {indexStatus && (
@@ -161,21 +210,32 @@ function App(): React.JSX.Element {
 
         <ResizableHandle withHandle />
 
-        {/* 中欄：閱讀區 */}
+        {/* 中欄：分頁 + 閱讀區 */}
         <ResizablePanel defaultSize={52} minSize={30}>
-          {selectedFile && selectedFile.kind !== 'note' ? (
-            <MediaView file={selectedFile} onClose={() => setSelectedPath(null)} />
-          ) : doc ? (
-            <NoteView
-              key={doc.path}
-              doc={doc}
-              resolveWikiTarget={resolveWikiTarget}
-              onNavigate={setSelectedPath}
-              onClose={() => setSelectedPath(null)}
-            />
-          ) : (
-            <Welcome />
-          )}
+          <div className="flex h-full flex-col">
+            {tabs.length > 0 && (
+              <TabBar
+                tabs={tabs}
+                activePath={activePath}
+                onSelect={setActivePath}
+                onClose={closeTab}
+              />
+            )}
+            <div className="min-h-0 flex-1">
+              {activeFile && activeFile.kind !== 'note' ? (
+                <MediaView key={activeFile.path} file={activeFile} />
+              ) : doc ? (
+                <NoteView
+                  key={doc.path}
+                  doc={doc}
+                  resolveWikiTarget={resolveWikiTarget}
+                  onNavigate={openNote}
+                />
+              ) : (
+                <Welcome />
+              )}
+            </div>
+          </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
@@ -207,10 +267,10 @@ function App(): React.JSX.Element {
             </div>
             {/* 切 tab 保持 mounted，保留對話歷史與進行中的 streaming / agent run */}
             <div className={cn('min-h-0 flex-1', activeTab !== 'chat' && 'hidden')}>
-              <ChatPanel onOpenNote={setSelectedPath} />
+              <ChatPanel onOpenNote={openNote} />
             </div>
             <div className={cn('min-h-0 flex-1', activeTab !== 'agent' && 'hidden')}>
-              <AgentPanel onOpenNote={setSelectedPath} />
+              <AgentPanel onOpenNote={openNote} />
             </div>
           </div>
         </ResizablePanel>

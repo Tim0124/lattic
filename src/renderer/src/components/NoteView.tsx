@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { FolderOpen, X } from 'lucide-react'
 import type { NoteDoc } from 'src/share/types'
 import { preprocessObsidian } from '../lib/wikilink'
 import { cn, vaultUrl } from '../lib/utils'
@@ -12,17 +11,10 @@ interface NoteViewProps {
   doc: NoteDoc
   resolveWikiTarget: (target: string) => string | null
   onNavigate: (path: string) => void
-  onClose: () => void
 }
 
-export function NoteView({
-  doc,
-  resolveWikiTarget,
-  onNavigate,
-  onClose
-}: NoteViewProps): React.JSX.Element {
+export function NoteView({ doc, resolveWikiTarget, onNavigate }: NoteViewProps): React.JSX.Element {
   const content = useMemo(() => preprocessObsidian(doc.content), [doc.content])
-  const folder = doc.path.includes('/') ? doc.path.slice(0, doc.path.lastIndexOf('/')) : ''
 
   const articleRef = useRef<HTMLElement>(null)
   const findInputRef = useRef<HTMLInputElement>(null)
@@ -51,25 +43,6 @@ export function NoteView({
 
   return (
     <div className="relative flex h-full flex-col">
-      <header className="flex h-11 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-        {folder && (
-          <>
-            <FolderOpen className="h-3.5 w-3.5 text-zinc-400" />
-            <span className="truncate text-xs text-zinc-400">{folder.replaceAll('/', ' / ')}</span>
-            <span className="text-zinc-300 dark:text-zinc-600">/</span>
-          </>
-        )}
-        <span className="truncate text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
-          {doc.title}
-        </span>
-        <button
-          onClick={onClose}
-          title="關閉筆記"
-          className="ml-auto rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </header>
       {findOpen && (
         <FindBar
           query={query}

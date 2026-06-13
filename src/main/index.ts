@@ -41,6 +41,19 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  // Cmd/Ctrl+W 關閉目前分頁，而非關閉視窗。
+  // 在 main 攔截才能同時擋掉系統選單的 Close Window 快捷鍵
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (
+      input.type === 'keyDown' &&
+      (input.meta || input.control) &&
+      input.key.toLowerCase() === 'w'
+    ) {
+      event.preventDefault()
+      mainWindow.webContents.send('shortcut:close-tab')
+    }
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {

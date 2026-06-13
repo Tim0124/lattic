@@ -40,6 +40,7 @@ const api = {
     return () => ipcRenderer.removeListener('vault:changed', listener)
   },
   onIndexStatus: subscribe<IndexStatus>('index:status'),
+  onCloseTabShortcut: subscribe<void>('shortcut:close-tab'),
   onChatChunk: subscribe<ChatChunkEvent>('chat:chunk'),
   onChatDone: subscribe<ChatDoneEvent>('chat:done'),
   onChatError: subscribe<ChatErrorEvent>('chat:error'),
