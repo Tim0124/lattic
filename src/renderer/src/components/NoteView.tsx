@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FolderOpen, X } from 'lucide-react'
 import type { NoteDoc } from 'src/share/types'
 import { preprocessObsidian } from '../lib/wikilink'
 import { cn, vaultUrl } from '../lib/utils'
+import { useFindInArticle } from '../lib/useFindInArticle'
+import { FindBar } from './FindBar'
 
 interface NoteViewProps {
   doc: NoteDoc
@@ -22,8 +24,33 @@ export function NoteView({
   const content = useMemo(() => preprocessObsidian(doc.content), [doc.content])
   const folder = doc.path.includes('/') ? doc.path.slice(0, doc.path.lastIndexOf('/')) : ''
 
+  const articleRef = useRef<HTMLElement>(null)
+  const findInputRef = useRef<HTMLInputElement>(null)
+  const [findOpen, setFindOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const find = useFindInArticle(articleRef, findOpen ? query : '', doc.path)
+
+  // 切換筆記由 App 端的 key 觸發 remount 來重置搜尋狀態
+
+  // Cmd/Ctrl+F：開啟文內搜尋並聚焦
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        setFindOpen(true)
+        findInputRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    if (findOpen) findInputRef.current?.focus()
+  }, [findOpen])
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
       <header className="flex h-11 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         {folder && (
           <>
@@ -43,8 +70,23 @@ export function NoteView({
           <X className="h-3.5 w-3.5" />
         </button>
       </header>
+      {findOpen && (
+        <FindBar
+          query={query}
+          onQueryChange={setQuery}
+          count={find.count}
+          current={find.current}
+          onNext={find.next}
+          onPrev={find.prev}
+          onClose={() => setFindOpen(false)}
+          inputRef={findInputRef}
+        />
+      )}
       <div className="flex-1 overflow-y-auto">
-        <article className="prose prose-zinc dark:prose-invert prose-headings:scroll-mt-4 mx-auto max-w-3xl px-10 py-10">
+        <article
+          ref={articleRef}
+          className="prose prose-zinc dark:prose-invert prose-headings:scroll-mt-4 mx-auto max-w-3xl px-10 py-10"
+        >
           <h1>{doc.title}</h1>
           <Markdown
             remarkPlugins={[remarkGfm]}

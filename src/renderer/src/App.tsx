@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, Bot, MessagesSquare, Settings } from 'lucide-react'
 import type { SearchResult, IndexStatus } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
@@ -65,6 +65,7 @@ function App(): React.JSX.Element {
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'agent'>('chat')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings: themeSettings, update: updateTheme } = useTheme()
 
   const { data: files = [] } = useFiles()
@@ -79,6 +80,23 @@ function App(): React.JSX.Element {
   useEffect(() => {
     void window.api.getIndexStatus().then(setIndexStatus)
     return window.api.onIndexStatus(setIndexStatus)
+  }, [])
+
+  // 全域快捷鍵：Cmd/Ctrl+K 聚焦搜尋、Cmd/Ctrl+, 開設定
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!(e.metaKey || e.ctrlKey)) return
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+      } else if (e.key === ',') {
+        e.preventDefault()
+        setSettingsOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   const resolveWikiTarget = useMemo(() => createWikiResolver(notes), [notes])
@@ -105,7 +123,11 @@ function App(): React.JSX.Element {
                 <Settings className="h-3.5 w-3.5" />
               </button>
             </div>
-            <SearchBar onResults={setResults} disabled={indexStatus?.state === 'indexing'} />
+            <SearchBar
+              onResults={setResults}
+              disabled={indexStatus?.state === 'indexing'}
+              inputRef={searchInputRef}
+            />
             <div className="min-h-0 flex-1 overflow-y-auto">
               {results ? (
                 <SearchResults results={results} onSelect={setSelectedPath} />
@@ -125,6 +147,7 @@ function App(): React.JSX.Element {
             <MediaView file={selectedFile} onClose={() => setSelectedPath(null)} />
           ) : doc ? (
             <NoteView
+              key={doc.path}
               doc={doc}
               resolveWikiTarget={resolveWikiTarget}
               onNavigate={setSelectedPath}

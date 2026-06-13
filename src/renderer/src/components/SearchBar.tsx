@@ -5,9 +5,10 @@ import type { SearchResult } from 'src/share/types'
 interface SearchBarProps {
   onResults: (results: SearchResult[] | null) => void
   disabled: boolean
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export function SearchBar({ onResults, disabled }: SearchBarProps): React.JSX.Element {
+export function SearchBar({ onResults, disabled, inputRef }: SearchBarProps): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
 
@@ -39,6 +40,7 @@ export function SearchBar({ onResults, disabled }: SearchBarProps): React.JSX.El
           <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
         )}
         <input
+          ref={inputRef}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
