@@ -1,4 +1,5 @@
 import { watch, type FSWatcher } from 'chokidar'
+import { existsSync } from 'fs'
 import { mkdir, readdir, readFile, stat, writeFile } from 'fs/promises'
 import { dirname, join, resolve, extname, basename } from 'path'
 import matter from 'gray-matter'
@@ -27,6 +28,11 @@ class VaultService {
 
   async init(root: string): Promise<void> {
     this.root = root
+    // 無有效 vault（首次啟動未選 / 路徑已不存在）：維持空狀態，等使用者透過引導選擇
+    if (!root || !existsSync(root)) {
+      this.root = ''
+      return
+    }
     await this.scan()
     this.startWatching()
   }
@@ -139,6 +145,18 @@ class VaultService {
     const abs = resolve(this.root, candidate)
     if (!abs.startsWith(this.root + '/')) return null
     return abs
+  }
+
+  /**
+   * 解析筆記內附件（圖片 / HTML）的路徑。先嘗試「相對 baseDir（筆記所在資料夾）」且檔案存在，
+   * 否則退回 toAbsolute（相對 vault 根 / Obsidian 式純檔名）。同樣防 path traversal。
+   */
+  resolveMedia(relPath: string, baseDir?: string): string | null {
+    if (baseDir) {
+      const abs = resolve(this.root, baseDir, relPath)
+      if (abs.startsWith(this.root + '/') && existsSync(abs)) return abs
+    }
+    return this.toAbsolute(relPath)
   }
 
   private async scan(): Promise<void> {

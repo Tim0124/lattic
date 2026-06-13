@@ -74,9 +74,11 @@ app.whenReady().then(async () => {
   // URL 格式為 vault://media/<路徑>：standard scheme 會解析並小寫化 host，
   // 用固定的假 host 墊著，實際路徑放 pathname 以保留大小寫
   protocol.handle('vault', (request) => {
-    const { pathname } = new URL(request.url)
+    const { pathname, searchParams } = new URL(request.url)
     const relPath = decodeURIComponent(pathname.slice(1))
-    const abs = vault.toAbsolute(relPath)
+    // base 為筆記所在資料夾，讓相對路徑圖片優先以「相對筆記」解析
+    const base = searchParams.get('base') || undefined
+    const abs = vault.resolveMedia(relPath, base)
     if (!abs) return new Response('Not found', { status: 404 })
     return net.fetch(pathToFileURL(abs).toString())
   })

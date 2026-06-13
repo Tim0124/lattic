@@ -89,7 +89,13 @@ const zhHant: Dict = {
   'onboarding.skip': '先略過',
   'onboarding.recheck': '重新檢查',
   'onboarding.chatModel': '問答 / Agent 模型',
-  'onboarding.embedModel': 'Embedding 模型'
+  'onboarding.embedModel': 'Embedding 模型',
+  'transclude.loading': '載入內嵌筆記…',
+  'transclude.notFound': '找不到內嵌的筆記：{target}',
+  'transclude.sectionNotFound': '找不到段落「{anchor}」，顯示整篇',
+  'vaultSetup.title': '選擇你的 Vault 資料夾',
+  'vaultSetup.desc': 'Lattic 會讀取這個資料夾裡的 Markdown 筆記與附件，所有處理都在本機完成。',
+  'vaultSetup.pick': '選擇資料夾'
 }
 
 const en: Dict = {
@@ -170,7 +176,14 @@ const en: Dict = {
   'onboarding.skip': 'Skip for now',
   'onboarding.recheck': 'Re-check',
   'onboarding.chatModel': 'Chat / Agent model',
-  'onboarding.embedModel': 'Embedding model'
+  'onboarding.embedModel': 'Embedding model',
+  'transclude.loading': 'Loading embedded note…',
+  'transclude.notFound': 'Embedded note not found: {target}',
+  'transclude.sectionNotFound': 'Section "{anchor}" not found, showing whole note',
+  'vaultSetup.title': 'Choose your vault folder',
+  'vaultSetup.desc':
+    'Lattic reads the Markdown notes and attachments in this folder. Everything runs locally.',
+  'vaultSetup.pick': 'Choose folder'
 }
 
 const resources: Record<Lang, Dict> = { 'zh-Hant': zhHant, en }
