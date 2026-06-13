@@ -37,6 +37,8 @@ export interface RetrievedChunk {
 const MAX_CHUNK = 1200
 const SPLIT_SIZE = 1000
 const OVERLAP = 200
+/** 搜尋結果相關度門檻（cosine）；低於此分視為弱相關，不顯示 */
+const SEARCH_MIN_SCORE = 0.5
 
 function chunkContent(content: string): { heading: string; text: string }[] {
   const sections: { heading: string; lines: string[] }[] = [{ heading: '', lines: [] }]
@@ -217,7 +219,10 @@ class Indexer {
 
   async search(query: string, k = 8): Promise<SearchResult[]> {
     const chunks = await this.retrieve(query, k)
-    return chunks.map(({ text, ...rest }) => ({ ...rest, snippet: text.slice(0, 160) }))
+    // 只留相關度達門檻的；若全部偏低，至少給最相關的一筆，避免空結果
+    const strong = chunks.filter((c) => c.score >= SEARCH_MIN_SCORE)
+    const picked = strong.length > 0 ? strong : chunks.slice(0, 1)
+    return picked.map(({ text, ...rest }) => ({ ...rest, snippet: text.slice(0, 160) }))
   }
 
   private chunkCount(): number {
