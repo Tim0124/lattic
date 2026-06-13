@@ -1,3 +1,5 @@
+import { vaultUrl } from './utils'
+
 const IMAGE_EXT = /\.(png|jpe?g|gif|svg|webp|avif|bmp)$/i
 
 /**
@@ -10,7 +12,7 @@ export function preprocessObsidian(md: string): string {
     .replace(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, rawTarget: string) => {
       const target = rawTarget.trim()
       if (IMAGE_EXT.test(target)) {
-        return `![${target}](vault://${encodeURIComponent(target)})`
+        return `![${target}](${vaultUrl(target)})`
       }
       return `[${target}](wiki:${encodeURIComponent(target)})`
     })

@@ -1,17 +1,23 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen } from 'lucide-react'
-import type { NoteMeta } from 'src/share/types'
+import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, Globe, Image } from 'lucide-react'
+import type { VaultFile, VaultFileKind } from 'src/share/types'
 import { cn } from '../lib/utils'
+
+const FILE_ICONS: Record<VaultFileKind, typeof FileText> = {
+  note: FileText,
+  image: Image,
+  html: Globe
+}
 
 interface FolderNode {
   name: string
   path: string
   folders: FolderNode[]
-  notes: NoteMeta[]
+  files: VaultFile[]
 }
 
-function buildTree(notes: NoteMeta[]): FolderNode {
-  const root: FolderNode = { name: '', path: '', folders: [], notes: [] }
+function buildTree(files: VaultFile[]): FolderNode {
+  const root: FolderNode = { name: '', path: '', folders: [], files: [] }
   const folderMap = new Map<string, FolderNode>([['', root]])
 
   const ensureFolder = (path: string): FolderNode => {
@@ -23,27 +29,27 @@ function buildTree(notes: NoteMeta[]): FolderNode {
       name: path.slice(path.lastIndexOf('/') + 1),
       path,
       folders: [],
-      notes: []
+      files: []
     }
     parent.folders.push(node)
     folderMap.set(path, node)
     return node
   }
 
-  for (const note of notes) {
-    ensureFolder(note.folder).notes.push(note)
+  for (const file of files) {
+    ensureFolder(file.folder).files.push(file)
   }
   return root
 }
 
 interface NoteTreeProps {
-  notes: NoteMeta[]
+  files: VaultFile[]
   selectedPath: string | null
   onSelect: (path: string) => void
 }
 
-export function NoteTree({ notes, selectedPath, onSelect }: NoteTreeProps): React.JSX.Element {
-  const tree = useMemo(() => buildTree(notes), [notes])
+export function NoteTree({ files, selectedPath, onSelect }: NoteTreeProps): React.JSX.Element {
+  const tree = useMemo(() => buildTree(files), [files])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const toggle = (path: string): void => {
@@ -76,13 +82,14 @@ export function NoteTree({ notes, selectedPath, onSelect }: NoteTreeProps): Reac
       )
       if (!isCollapsed) items.push(...renderFolder(child, depth + 1))
     }
-    for (const note of folder.notes) {
-      const selected = note.path === selectedPath
+    for (const file of folder.files) {
+      const selected = file.path === selectedPath
+      const FileIcon = FILE_ICONS[file.kind]
       items.push(
         <button
-          key={note.path}
+          key={file.path}
           style={indent}
-          onClick={() => onSelect(note.path)}
+          onClick={() => onSelect(file.path)}
           className={cn(
             'flex w-full items-center gap-1.5 rounded-md py-1 pr-2 text-left text-[13px]',
             selected
@@ -90,13 +97,13 @@ export function NoteTree({ notes, selectedPath, onSelect }: NoteTreeProps): Reac
               : 'text-zinc-600 hover:bg-zinc-200/60 dark:text-zinc-400 dark:hover:bg-zinc-800'
           )}
         >
-          <FileText
+          <FileIcon
             className={cn(
               'ml-[18px] h-3.5 w-3.5 shrink-0',
               selected ? 'text-primary' : 'text-zinc-400'
             )}
           />
-          <span className="truncate">{note.title}</span>
+          <span className="truncate">{file.title}</span>
         </button>
       )
     }

@@ -1,18 +1,24 @@
 import { useMemo } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, X } from 'lucide-react'
 import type { NoteDoc } from 'src/share/types'
 import { preprocessObsidian } from '../lib/wikilink'
-import { cn } from '../lib/utils'
+import { cn, vaultUrl } from '../lib/utils'
 
 interface NoteViewProps {
   doc: NoteDoc
   resolveWikiTarget: (target: string) => string | null
   onNavigate: (path: string) => void
+  onClose: () => void
 }
 
-export function NoteView({ doc, resolveWikiTarget, onNavigate }: NoteViewProps): React.JSX.Element {
+export function NoteView({
+  doc,
+  resolveWikiTarget,
+  onNavigate,
+  onClose
+}: NoteViewProps): React.JSX.Element {
   const content = useMemo(() => preprocessObsidian(doc.content), [doc.content])
   const folder = doc.path.includes('/') ? doc.path.slice(0, doc.path.lastIndexOf('/')) : ''
 
@@ -29,6 +35,13 @@ export function NoteView({ doc, resolveWikiTarget, onNavigate }: NoteViewProps):
         <span className="truncate text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           {doc.title}
         </span>
+        <button
+          onClick={onClose}
+          title="關閉筆記"
+          className="ml-auto rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </header>
       <div className="flex-1 overflow-y-auto">
         <article className="prose prose-zinc dark:prose-invert prose-headings:scroll-mt-4 mx-auto max-w-3xl px-10 py-10">
@@ -70,7 +83,7 @@ export function NoteView({ doc, resolveWikiTarget, onNavigate }: NoteViewProps):
               img: ({ src, alt }) => {
                 const finalSrc =
                   typeof src === 'string' && !/^(https?|vault|data):/.test(src)
-                    ? `vault://${encodeURIComponent(src)}`
+                    ? vaultUrl(decodeURI(src))
                     : src
                 return <img src={finalSrc} alt={alt ?? ''} className="rounded-lg" />
               }

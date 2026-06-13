@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type {
-  NoteMeta,
+  VaultFile,
   NoteDoc,
   SearchResult,
   IndexStatus,
@@ -23,7 +23,7 @@ function subscribe<T>(channel: string): (cb: (payload: T) => void) => () => void
 
 const api = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
-  listNotes: (): Promise<NoteMeta[]> => ipcRenderer.invoke('vault:list'),
+  listFiles: (): Promise<VaultFile[]> => ipcRenderer.invoke('vault:files'),
   readNote: (relPath: string): Promise<NoteDoc | null> => ipcRenderer.invoke('vault:read', relPath),
   search: (query: string, k?: number): Promise<SearchResult[]> =>
     ipcRenderer.invoke('search:query', query, k),

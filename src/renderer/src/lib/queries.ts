@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
-import type { NoteMeta, NoteDoc } from 'src/share/types'
+import type { VaultFile, NoteDoc } from 'src/share/types'
 
-export function useNotes(): UseQueryResult<NoteMeta[]> {
+export function useFiles(): UseQueryResult<VaultFile[]> {
   return useQuery({
-    queryKey: ['notes'],
-    queryFn: () => window.api.listNotes()
+    queryKey: ['files'],
+    queryFn: () => window.api.listFiles()
   })
 }
 
@@ -22,7 +22,7 @@ export function useVaultInvalidation(): void {
   const queryClient = useQueryClient()
   useEffect(() => {
     return window.api.onVaultChanged(() => {
-      void queryClient.invalidateQueries({ queryKey: ['notes'] })
+      void queryClient.invalidateQueries({ queryKey: ['files'] })
       void queryClient.invalidateQueries({ queryKey: ['note'] })
     })
   }, [queryClient])

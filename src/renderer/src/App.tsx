@@ -13,7 +13,8 @@ import { TextGenerateEffect } from './components/ui/text-generate-effect'
 import { SettingsDialog } from './components/SettingsDialog'
 import { useTheme } from './lib/theme'
 import { createWikiResolver } from './lib/wikilink'
-import { useNotes, useNote, useVaultInvalidation } from './lib/queries'
+import { MediaView } from './components/MediaView'
+import { useFiles, useNote, useVaultInvalidation } from './lib/queries'
 import { cn } from './lib/utils'
 
 function IndexStatusBadge({ status }: { status: IndexStatus }): React.JSX.Element | null {
@@ -66,8 +67,13 @@ function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { settings: themeSettings, update: updateTheme } = useTheme()
 
-  const { data: notes = [] } = useNotes()
-  const { data: doc } = useNote(selectedPath)
+  const { data: files = [] } = useFiles()
+  const notes = useMemo(() => files.filter((f) => f.kind === 'note'), [files])
+  const selectedFile = useMemo(
+    () => files.find((f) => f.path === selectedPath) ?? null,
+    [files, selectedPath]
+  )
+  const { data: doc } = useNote(selectedFile?.kind === 'note' ? selectedFile.path : null)
   useVaultInvalidation()
 
   useEffect(() => {
@@ -104,7 +110,7 @@ function App(): React.JSX.Element {
               {results ? (
                 <SearchResults results={results} onSelect={setSelectedPath} />
               ) : (
-                <NoteTree notes={notes} selectedPath={selectedPath} onSelect={setSelectedPath} />
+                <NoteTree files={files} selectedPath={selectedPath} onSelect={setSelectedPath} />
               )}
             </div>
             {indexStatus && <IndexStatusBadge status={indexStatus} />}
@@ -115,11 +121,14 @@ function App(): React.JSX.Element {
 
         {/* 中欄：閱讀區 */}
         <ResizablePanel defaultSize={52} minSize={30}>
-          {doc ? (
+          {selectedFile && selectedFile.kind !== 'note' ? (
+            <MediaView file={selectedFile} onClose={() => setSelectedPath(null)} />
+          ) : doc ? (
             <NoteView
               doc={doc}
               resolveWikiTarget={resolveWikiTarget}
               onNavigate={setSelectedPath}
+              onClose={() => setSelectedPath(null)}
             />
           ) : (
             <Welcome />

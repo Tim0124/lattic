@@ -9,6 +9,15 @@ import { chat } from './chat'
 import { agent } from './agent'
 import type { ChatMessage } from '../share/types'
 
+// 必須在 app ready 前註冊：standard 讓 vault:// 的 URL 解析與子資源
+// 相對路徑行為跟 http 一致，secure 避免被視為不安全內容而擋下
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'vault',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+  }
+])
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -45,9 +54,12 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // vault:// 提供筆記內的圖片等附件，路徑解析限制在 vault 目錄內
+  // vault:// 提供筆記內的圖片、HTML 等附件，路徑解析限制在 vault 目錄內。
+  // URL 格式為 vault://media/<路徑>：standard scheme 會解析並小寫化 host，
+  // 用固定的假 host 墊著，實際路徑放 pathname 以保留大小寫
   protocol.handle('vault', (request) => {
-    const relPath = decodeURIComponent(request.url.slice('vault://'.length))
+    const { pathname } = new URL(request.url)
+    const relPath = decodeURIComponent(pathname.slice(1))
     const abs = vault.toAbsolute(relPath)
     if (!abs) return new Response('Not found', { status: 404 })
     return net.fetch(pathToFileURL(abs).toString())
@@ -70,7 +82,7 @@ app.whenReady().then(async () => {
   void indexer.init()
 
   ipcMain.handle('app:get-version', () => app.getVersion())
-  ipcMain.handle('vault:list', () => vault.listNotes())
+  ipcMain.handle('vault:files', () => vault.listFiles())
   ipcMain.handle('vault:read', (_event, relPath: string) => vault.readNote(relPath))
   ipcMain.handle('search:query', (_event, query: string, k?: number) => indexer.search(query, k))
   ipcMain.handle('index:status', () => indexer.getStatus())

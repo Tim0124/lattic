@@ -2,15 +2,24 @@ import { watch, type FSWatcher } from 'chokidar'
 import { mkdir, readdir, readFile, stat, writeFile } from 'fs/promises'
 import { dirname, join, resolve, extname, basename } from 'path'
 import matter from 'gray-matter'
-import type { NoteMeta, NoteDoc } from '../share/types'
+import type { VaultFile, VaultFileKind, NoteDoc } from '../share/types'
 
 export const VAULT_PATH = ''
 
 const IGNORED_DIRS = new Set(['.obsidian', '.trash', '.git'])
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.avif', '.bmp'])
+const HTML_EXTS = new Set(['.html', '.htm'])
+
+function kindOf(ext: string): VaultFileKind | null {
+  if (ext === '.md') return 'note'
+  if (IMAGE_EXTS.has(ext)) return 'image'
+  if (HTML_EXTS.has(ext)) return 'html'
+  return null
+}
 
 class VaultService {
-  /** relPath -> NoteMeta */
-  private notes = new Map<string, NoteMeta>()
+  /** relPath -> VaultFile（樹上顯示的檔案：note / image / html） */
+  private files = new Map<string, VaultFile>()
   /** 小寫檔名（含副檔名）-> relPath，供 Obsidian 式短檔名解析（附件用） */
   private filesByName = new Map<string, string>()
   private watcher: FSWatcher | null = null
@@ -37,14 +46,20 @@ class VaultService {
     this.changeListeners.add(cb)
   }
 
-  listNotes(): NoteMeta[] {
-    return [...this.notes.values()].sort((a, b) => a.path.localeCompare(b.path, 'zh-Hant'))
+  /** 樹上顯示的所有檔案 */
+  listFiles(): VaultFile[] {
+    return [...this.files.values()].sort((a, b) => a.path.localeCompare(b.path, 'zh-Hant'))
+  }
+
+  /** 僅 markdown 筆記（索引、agent、wikilink 解析用） */
+  listNotes(): VaultFile[] {
+    return this.listFiles().filter((f) => f.kind === 'note')
   }
 
   async readNote(relPath: string): Promise<NoteDoc | null> {
     const abs = this.toAbsolute(relPath)
-    const meta = this.notes.get(relPath)
-    if (!abs || !meta) return null
+    const meta = this.files.get(relPath)
+    if (!abs || meta?.kind !== 'note') return null
     const raw = await readFile(abs, 'utf-8')
     let content = raw
     let data: Record<string, unknown> = {}
@@ -63,7 +78,7 @@ class VaultService {
   }
 
   noteExists(relPath: string): boolean {
-    return this.notes.has(relPath)
+    return this.files.get(relPath)?.kind === 'note'
   }
 
   /** 建立或覆寫筆記。寫入後 watcher 會自動觸發 rescan 與 reindex */
@@ -90,7 +105,7 @@ class VaultService {
   }
 
   private async scan(): Promise<void> {
-    const notes = new Map<string, NoteMeta>()
+    const files = new Map<string, VaultFile>()
     const filesByName = new Map<string, string>()
 
     const walk = async (dir: string): Promise<void> => {
@@ -104,21 +119,23 @@ class VaultService {
         }
         const relPath = abs.slice(VAULT_PATH.length + 1)
         filesByName.set(entry.name.toLowerCase(), relPath)
-        if (extname(entry.name) === '.md') {
-          const s = await stat(abs)
-          const folder = relPath.includes('/') ? relPath.slice(0, relPath.lastIndexOf('/')) : ''
-          notes.set(relPath, {
-            path: relPath,
-            title: basename(entry.name, '.md'),
-            folder,
-            mtime: s.mtimeMs
-          })
-        }
+        const ext = extname(entry.name).toLowerCase()
+        const kind = kindOf(ext)
+        if (!kind) continue
+        const s = await stat(abs)
+        const folder = relPath.includes('/') ? relPath.slice(0, relPath.lastIndexOf('/')) : ''
+        files.set(relPath, {
+          path: relPath,
+          title: kind === 'note' ? basename(entry.name, '.md') : entry.name,
+          folder,
+          kind,
+          mtime: s.mtimeMs
+        })
       }
     }
 
     await walk(VAULT_PATH)
-    this.notes = notes
+    this.files = files
     this.filesByName = filesByName
   }
 }

@@ -1,10 +1,13 @@
-export interface NoteMeta {
+export type VaultFileKind = 'note' | 'image' | 'html'
+
+export interface VaultFile {
   /** 相對 vault 根目錄的路徑，如 "folder/note.md" */
   path: string
-  /** 檔名（不含副檔名），即 Obsidian 的筆記標題 */
+  /** 檔名（note 不含副檔名，即 Obsidian 的筆記標題；其他保留副檔名） */
   title: string
   /** 所在資料夾相對路徑，根目錄為 "" */
   folder: string
+  kind: VaultFileKind
   mtime: number
 }
 
