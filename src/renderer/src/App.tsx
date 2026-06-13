@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bot, MessagesSquare, RefreshCw, Settings } from 'lucide-react'
 import logo from './assets/logo.svg'
-import type { SearchResult, IndexStatus, VaultFile } from 'src/share/types'
+import type { SearchResult, IndexStatus, VaultFile, OllamaStatus } from 'src/share/types'
 import { NoteTree } from './components/NoteTree'
 import { NoteView } from './components/NoteView'
 import { SearchBar } from './components/SearchBar'
@@ -13,6 +13,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './componen
 import { Spotlight } from './components/ui/spotlight'
 import { TextGenerateEffect } from './components/ui/text-generate-effect'
 import { SettingsDialog } from './components/SettingsDialog'
+import { OnboardingDialog } from './components/OnboardingDialog'
 import { useTheme } from './lib/theme'
 import { createWikiResolver } from './lib/wikilink'
 import { MediaView } from './components/MediaView'
@@ -97,6 +98,8 @@ function App(): React.JSX.Element {
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'agent'>('chat')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings: themeSettings, update: updateTheme } = useTheme()
 
@@ -145,6 +148,20 @@ function App(): React.JSX.Element {
   useEffect(() => {
     void window.api.getIndexStatus().then(setIndexStatus)
     return window.api.onIndexStatus(setIndexStatus)
+  }, [])
+
+  useEffect(() => {
+    void window.api.getOllamaStatus().then(setOllamaStatus)
+  }, [])
+
+  const ollamaReady =
+    !!ollamaStatus && ollamaStatus.running && ollamaStatus.chatReady && ollamaStatus.embedReady
+
+  const recheckOllama = useCallback(async () => {
+    const s = await window.api.getOllamaStatus()
+    setOllamaStatus(s)
+    // 模型就緒 → 建立索引（首次啟動時的索引可能因缺模型而失敗）
+    if (s.running && s.chatReady && s.embedReady) void window.api.rebuildIndex()
   }, [])
 
   // 全域快捷鍵：Cmd/Ctrl+K 聚焦搜尋、Cmd/Ctrl+, 開設定
@@ -281,6 +298,14 @@ function App(): React.JSX.Element {
         settings={themeSettings}
         onChange={updateTheme}
       />
+
+      {ollamaStatus && !ollamaReady && !onboardingDismissed && (
+        <OnboardingDialog
+          status={ollamaStatus}
+          onRecheck={recheckOllama}
+          onDismiss={() => setOnboardingDismissed(true)}
+        />
+      )}
     </div>
   )
 }

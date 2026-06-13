@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { FolderOpen, Monitor, Moon, Sun, X } from 'lucide-react'
+import type { AppSettings } from 'src/share/types'
 import { PALETTES, type ThemeSettings } from '../lib/theme'
 import { cn } from '../lib/utils'
 
@@ -17,6 +18,32 @@ const MODES = [
   { key: 'system', label: '跟隨系統', Icon: Monitor }
 ] as const
 
+function ModelSelect({
+  value,
+  models,
+  onChange
+}: {
+  value: string
+  models: string[]
+  onChange: (v: string) => void
+}): React.JSX.Element {
+  // 目前選用的模型若不在清單中（已移除或 Ollama 未啟動），仍保留為選項
+  const options = models.includes(value) ? models : [value, ...models]
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="focus:border-primary max-w-[190px] truncate rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs outline-none dark:border-zinc-700 dark:bg-zinc-800"
+    >
+      {options.map((m) => (
+        <option key={m} value={m}>
+          {m}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 export function SettingsDialog({
   open,
   onClose,
@@ -24,11 +51,23 @@ export function SettingsDialog({
   onChange
 }: SettingsDialogProps): React.JSX.Element {
   const [vaultPath, setVaultPath] = useState('')
+  const [models, setModels] = useState<string[]>([])
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
 
   useEffect(() => {
     if (!open) return
     void window.api.getVaultPath().then(setVaultPath)
+    void window.api.getSettings().then(setAppSettings)
+    void window.api
+      .listModels()
+      .then(setModels)
+      .catch(() => setModels([]))
   }, [open])
+
+  const updateSettings = (patch: Partial<AppSettings>): void => {
+    setAppSettings((prev) => (prev ? { ...prev, ...patch } : prev))
+    void window.api.setSettings(patch)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -92,6 +131,51 @@ export function SettingsDialog({
               </div>
               <p className="mt-1 text-[11px] text-zinc-400">變更後會重新掃描並建立索引</p>
             </div>
+
+            {appSettings && (
+              <div className="mt-4">
+                <div className="text-xs font-medium text-zinc-500">模型與檢索</div>
+                <div className="mt-2 space-y-2">
+                  <label className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                      問答 / Agent 模型
+                    </span>
+                    <ModelSelect
+                      value={appSettings.chatModel}
+                      models={models}
+                      onChange={(v) => updateSettings({ chatModel: v })}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-zinc-600 dark:text-zinc-300">Embedding 模型</span>
+                    <ModelSelect
+                      value={appSettings.embedModel}
+                      models={models}
+                      onChange={(v) => updateSettings({ embedModel: v })}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                      檢索 chunk 數（top-k）
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={1}
+                        max={12}
+                        value={appSettings.searchTopK}
+                        onChange={(e) => updateSettings({ searchTopK: Number(e.target.value) })}
+                        className="accent-primary w-28"
+                      />
+                      <span className="w-4 text-right text-xs tabular-nums text-zinc-500">
+                        {appSettings.searchTopK}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <p className="mt-1 text-[11px] text-zinc-400">更換 Embedding 模型會重建整個索引</p>
+              </div>
+            )}
 
             <div className="mt-4">
               <div className="text-xs font-medium text-zinc-500">外觀</div>

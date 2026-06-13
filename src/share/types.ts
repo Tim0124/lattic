@@ -19,6 +19,23 @@ export interface SearchResult {
   score: number
 }
 
+export interface AppSettings {
+  chatModel: string
+  embedModel: string
+  searchTopK: number
+}
+
+export interface OllamaStatus {
+  /** Ollama 服務是否連得上 */
+  running: boolean
+  /** 已安裝的模型名稱 */
+  installed: string[]
+  chatModel: string
+  embedModel: string
+  chatReady: boolean
+  embedReady: boolean
+}
+
 export interface IndexStatus {
   state: 'idle' | 'indexing' | 'ready' | 'error'
   /** 本輪需要 embed 的檔案中已完成的數量 */

@@ -7,7 +7,9 @@ import { vault } from './vault'
 import { indexer } from './indexer'
 import { chat } from './chat'
 import { agent } from './agent'
-import { getConfig, setVaultPath } from './config'
+import { getConfig, setConfig, setVaultPath } from './config'
+import { listModels, getStatus } from './ollama'
+import type { AppConfig } from './config'
 import type { ChatMessage } from '../share/types'
 
 // 必須在 app ready 前註冊：standard 讓 vault:// 的 URL 解析與子資源
@@ -108,6 +110,18 @@ app.whenReady().then(async () => {
     setVaultPath(picked)
     await vault.setRoot(picked)
     return picked
+  })
+  ipcMain.handle('ollama:list-models', () => listModels())
+  ipcMain.handle('ollama:status', () => getStatus())
+  ipcMain.handle('config:get-settings', () => {
+    const { chatModel, embedModel, searchTopK } = getConfig()
+    return { chatModel, embedModel, searchTopK }
+  })
+  ipcMain.handle('config:set-settings', (_event, patch: Partial<AppConfig>) => {
+    const prevEmbed = getConfig().embedModel
+    setConfig(patch)
+    // 換 embedding 模型代表向量空間改變，整個索引重建
+    if (patch.embedModel && patch.embedModel !== prevEmbed) void indexer.rebuild()
   })
   ipcMain.handle('vault:files', () => vault.listFiles())
   ipcMain.handle('vault:read', (_event, relPath: string) => vault.readNote(relPath))

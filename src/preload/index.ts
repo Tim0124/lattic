@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type {
+  AppSettings,
+  OllamaStatus,
   VaultFile,
   NoteDoc,
   SearchResult,
@@ -26,6 +28,11 @@ const api = {
   listFiles: (): Promise<VaultFile[]> => ipcRenderer.invoke('vault:files'),
   getVaultPath: (): Promise<string> => ipcRenderer.invoke('config:get-vault-path'),
   pickVault: (): Promise<string | null> => ipcRenderer.invoke('config:pick-vault'),
+  listModels: (): Promise<string[]> => ipcRenderer.invoke('ollama:list-models'),
+  getOllamaStatus: (): Promise<OllamaStatus> => ipcRenderer.invoke('ollama:status'),
+  getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('config:get-settings'),
+  setSettings: (patch: Partial<AppSettings>): Promise<void> =>
+    ipcRenderer.invoke('config:set-settings', patch),
   readNote: (relPath: string): Promise<NoteDoc | null> => ipcRenderer.invoke('vault:read', relPath),
   search: (query: string, k?: number): Promise<SearchResult[]> =>
     ipcRenderer.invoke('search:query', query, k),

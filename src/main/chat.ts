@@ -1,7 +1,8 @@
 import type { WebContents } from 'electron'
 import { indexer } from './indexer'
-import { OLLAMA_URL, CHAT_MODEL } from './ollama'
+import { OLLAMA_URL } from './ollama'
 import { vault } from './vault'
+import { getConfig } from './config'
 import type { ChatMessage, ChatSource } from '../share/types'
 
 const SYSTEM_PROMPT = `你是使用者個人 wiki 的助理，根據檢索到的筆記片段回答問題。
@@ -9,7 +10,6 @@ const SYSTEM_PROMPT = `你是使用者個人 wiki 的助理，根據檢索到的
 - 筆記裡沒有的資訊，明確說「筆記裡沒有相關內容」，需要時再以一般知識補充並註明
 - 用繁體中文回答，技術術語保留英文`
 
-const TOP_K = 5
 /** 送進模型的對話歷史字元上限。num_ctx 8192 還要容納 system prompt、檢索片段與輸出 */
 const HISTORY_CHAR_BUDGET = 4000
 /** 使用者以 `/` 指定引用的筆記，每篇注入的字元上限 */
@@ -60,7 +60,7 @@ class ChatService {
           refDocs.map((d) => `《${d.title}》\n${d.content.slice(0, REF_CHAR_CAP)}`).join('\n\n')
         sources = refDocs.map((d) => ({ path: d.path, title: d.title, heading: '', score: 1 }))
       } else {
-        const chunks = await indexer.retrieve(question, TOP_K)
+        const chunks = await indexer.retrieve(question, getConfig().searchTopK)
         // 來源 chip 依筆記去重（chunks 已按分數排序，每篇保留分數最高的那段）
         const seenPaths = new Set<string>()
         sources = []
@@ -85,7 +85,7 @@ class ChatService {
         method: 'POST',
         signal: controller.signal,
         body: JSON.stringify({
-          model: CHAT_MODEL,
+          model: getConfig().chatModel,
           stream: true,
           options: { num_ctx: 8192 },
           messages: [

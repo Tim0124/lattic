@@ -3,7 +3,8 @@ import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { app } from 'electron'
 import { vault } from './vault'
-import { embed, EMBED_MODEL } from './ollama'
+import { embed } from './ollama'
+import { getConfig } from './config'
 import type { IndexStatus, SearchResult } from '../share/types'
 
 interface Chunk {
@@ -87,7 +88,7 @@ class Indexer {
     try {
       const store = JSON.parse(await readFile(this.storePath, 'utf-8')) as StoreShape
       // 換 embedding 模型時整個索引作廢重建
-      if (store.model === EMBED_MODEL) {
+      if (store.model === getConfig().embedModel) {
         this.files = new Map(Object.entries(store.files))
       }
     } catch {
@@ -231,7 +232,10 @@ class Indexer {
   }
 
   private async save(): Promise<void> {
-    const store: StoreShape = { model: EMBED_MODEL, files: Object.fromEntries(this.files) }
+    const store: StoreShape = {
+      model: getConfig().embedModel,
+      files: Object.fromEntries(this.files)
+    }
     await writeFile(this.storePath, JSON.stringify(store))
   }
 }
