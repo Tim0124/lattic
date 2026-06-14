@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            eb_args: --mac --arm64 --x64
+          - os: windows-latest
+            eb_args: --win
+          - os: ubuntu-latest
+            eb_args: --linux AppImage deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build renderer & main
+        run: npm run build
+
+      - name: Package with electron-builder
+        run: npx electron-builder ${{ matrix.eb_args }} --publish never
+
+      - name: Upload installers to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*-mac.zip
+            dist/*-setup.exe
+            dist/*.AppImage
+            dist/*.deb
+          fail_on_unmatched_files: false
