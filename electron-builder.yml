@@ -2,6 +2,7 @@ appId: com.timkao.lattic
 productName: Lattic
 directories:
   buildResources: build
+afterPack: build/after-pack.js
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -19,6 +20,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  identity: null
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.

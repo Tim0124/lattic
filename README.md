@@ -17,7 +17,13 @@ Lattic 是一個 Electron 桌面應用，把你的 Obsidian 筆記庫（vault）
 | macOS（Apple Silicon）          | `Lattic-<version>.dmg` |
 | macOS（Intel）/ Windows / Linux | 後續版本由 CI 自動產出 |
 
-> 此 app 未做 code signing。macOS 首次開啟請在 Applications 對 Lattic **按右鍵 →「打開」**；Windows 若被 SmartScreen 攔下，點「更多資訊 → 仍要執行」。
+> **此 app 未做 code signing。** macOS 下載後會被標記為「已損毀」，需先在終端機移除 quarantine 才能開啟：
+>
+> ```bash
+> xattr -cr /Applications/Lattic.app
+> ```
+>
+> Windows 若被 SmartScreen 攔下，點「更多資訊 → 仍要執行」。
 >
 > 需先安裝並運行 [Ollama](https://ollama.com)，詳見下方[安裝與設定](#安裝與設定)。想自行從原始碼建置的話也參考該節。
 
