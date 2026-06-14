@@ -4,8 +4,7 @@
 
 Lattic 是一個 Electron 桌面應用，把你的 Obsidian 筆記庫（vault）變成可閱讀、可語意搜尋、可問答、可交辦任務的知識工作站。所有 AI 能力——向量搜尋、RAG 問答、agent 操作——都透過本機的 [Ollama](https://ollama.com) 運行，**筆記內容不會離開你的電腦**。
 
-<!-- 畫面截圖：請將應用截圖放到 docs/screenshot.png -->
-<!-- ![Lattic](docs/screenshot.png) -->
+![Lattic](docs/screenshot.jpg)
 
 ---
 
