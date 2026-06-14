@@ -8,6 +8,21 @@ Lattic 是一個 Electron 桌面應用，把你的 Obsidian 筆記庫（vault）
 
 ---
 
+## 下載
+
+到 **[Releases](https://github.com/Tim0124/lattic/releases/latest)** 下載最新版安裝檔：
+
+| 平台                            | 檔案                   |
+| ------------------------------- | ---------------------- |
+| macOS（Apple Silicon）          | `Lattic-<version>.dmg` |
+| macOS（Intel）/ Windows / Linux | 後續版本由 CI 自動產出 |
+
+> 此 app 未做 code signing。macOS 首次開啟請在 Applications 對 Lattic **按右鍵 →「打開」**；Windows 若被 SmartScreen 攔下，點「更多資訊 → 仍要執行」。
+>
+> 需先安裝並運行 [Ollama](https://ollama.com)，詳見下方[安裝與設定](#安裝與設定)。想自行從原始碼建置的話也參考該節。
+
+---
+
 ## 主要功能
 
 - **Vault 瀏覽** — 依資料夾結構呈現筆記樹，支援 Obsidian 的 `[[wikilink]]`、內嵌圖片、frontmatter。檔案變動即時反映（你在 Obsidian 編輯存檔，這邊自動刷新）。
